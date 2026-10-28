@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Xiaomi Redmi K40S / POCO F4 (munch, 22021211RC / 22021211RG), Qualcomm SM8250-AC.
+//
+// Memory banks, reserved regions and enabled peripherals come from the phone's
+// own device tree under Android (kona.dtsi of the vendor sm8250 kernel) and
+// from the SM8250 Mu-Silicium platform. The cont_splash_region, the UFS host
+// and the GENI SE4 touch wiring are byte-identical to alioth: kona.dtsi
+// reserves 0x9c000000 + 0x2300000, munch-sm8250.dtsi puts the FocalTech part on
+// qupv3_se4_spi at 6 MHz with reset GPIO 33 and IRQ GPIO 39.
+
+/dts-v1/;
+/include/ "sm8250.dtsi"
+
+/ {
+    model = "Xiaomi Redmi K40S";
+    compatible = "xiaomi,munch", "qcom,sm8250";
+
+    memory@80000000 {
+        device_type = "memory";
+        // The 8 GiB model: one bank from 0x80000000.
+        reg = <0 0x80000000 0x2 0x00000000>;
+    };
+
+    reserved-memory {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        ranges;
+
+        // The firmware hands this region to UniXNU as the initrd payload. Size is the
+        // phone's own cont_splash_region, so the stock ABL keeps the panel powered.
+        splash_region: splash_region@9c000000 {
+            reg = <0 0x9c000000 0 0x2300000>;
+            label = "cont_splash_region";
+        };
+    };
+};
+
+// Enable the CPUs the board runs, the UFS controller and PHY, and the QUPv3
+// serial engine the touch controller is wired to. Leave the GPU disabled until
+// a component with A650 scope is selected.
+&cpu0 { status = "okay"; };
+&cpu1 { status = "okay"; };
+&cpu2 { status = "okay"; };
+&cpu3 { status = "okay"; };
+&cpu4 { status = "okay"; };
+&cpu5 { status = "okay"; };
+&cpu6 { status = "okay"; };
+&cpu7 { status = "okay"; };
+
+// Storage: the UFS host controller and PHY are disabled in sm8250.dtsi and the
+// board enables them for its ShengUfs component.
+&ufs { status = "okay"; };
+&ufsphy { status = "okay"; };
+
+/* Cluster topology, only valid together with native-smp-type-clusters.patch: without it the
+ * topology parser maps a P core to cluster index 1 while MAX_CPU_CLUSTERS is 1 and writes past
+ * the end of cluster_phys_to_logical on the stack (measured: the kernel dies before the console
+ * comes up). The two must be enabled as one change. */
+&cpu0 { unixnu,cluster-type = "E"; };
+&cpu1 { unixnu,cluster-type = "E"; };
+&cpu2 { unixnu,cluster-type = "E"; };
+&cpu3 { unixnu,cluster-type = "E"; };
+&cpu4 { unixnu,cluster-type = "P"; };
+&cpu5 { unixnu,cluster-type = "P"; };
+&cpu6 { unixnu,cluster-type = "P"; };
+&cpu7 { unixnu,cluster-type = "P"; };

@@ -1,0 +1,15 @@
+[[source]]
+name = "sm8250"
+kind = "soc"
+git = "https://github.com/FFT-infra/UniXNU-sm8250-common"
+commit = "a6e7e36caab58f5b9a5625dbdb8da2bf290fa5cc"
+
+# The UFS driver fork that carries the SM8250 UFS stream configuration.
+# K40S (munch) and alioth share the same UFS host, PHY and stream ids
+# (0x0e0 / 0x4e0), so the alioth fork is pinned until a munch-specific
+# fork exists. Re-point this entry when that fork is published.
+[[source]]
+name = "ShengUfs"
+kind = "driver"
+git = "https://github.com/FFT-infra/NativeUfs-alioth"
+commit = "ab5405905a1892da03a9a53e0fa3dcd255d04055"
