@@ -304,3 +304,38 @@ __attribute__((weak)) void qcom_usb_debug_get_status(void *status)
   if (!bytes) return;
   for (i = 0; i < 304u; ++i) bytes[i] = 0xffu;
 }
+
+// Stage-2 diagnostics: the touch and HID archives are not part of the first image, and the
+// persistent UFS log writer is a later sheng feature. BootProgress.c/BootLog.c still reference
+// them as weak_import, which a static link must resolve.
+__attribute__((weak)) volatile uint32_t native_hid_stage;
+__attribute__((weak)) volatile int native_hid_load_status;
+__attribute__((weak)) volatile int native_hid_input_meta_status;
+__attribute__((weak)) volatile int native_hid_matching_load_status;
+__attribute__((weak)) volatile uint32_t native_hid_touch_status;
+__attribute__((weak)) volatile uint32_t native_touch_frames;
+__attribute__((weak)) volatile uint32_t native_touch_valid;
+__attribute__((weak)) volatile uint32_t native_touch_fail_step;
+__attribute__((weak)) volatile uint32_t native_touch_hid_reports;
+__attribute__((weak)) volatile unsigned native_touch_frame_raw[8];
+__attribute__((weak)) volatile int native_touch_last_x;
+__attribute__((weak)) volatile int native_touch_last_y;
+__attribute__((weak)) volatile unsigned native_touch_irq_level;
+__attribute__((weak)) volatile unsigned native_touch_irq_low;
+
+__attribute__((weak)) int native_ufs_log_read(uint64_t offset, uint32_t blocks, void *buffer);
+__attribute__((weak)) int native_ufs_log_read(uint64_t offset, uint32_t blocks, void *buffer)
+{
+	(void)offset; (void)blocks; (void)buffer;
+	return 0;
+}
+
+__attribute__((weak)) int native_ufs_log_read_bytes(uint64_t offset, uint32_t bytes, void *buffer);
+__attribute__((weak)) int native_ufs_log_read_bytes(uint64_t offset, uint32_t bytes, void *buffer)
+{
+	(void)offset; (void)bytes; (void)buffer;
+	return 0;
+}
+
+__attribute__((weak)) volatile uint32_t native_hid_class_sizes[5];
+__attribute__((weak)) char native_gpu_rows[][120] = {{0}};
