@@ -43,11 +43,10 @@ archives = [
   # in scripts/data/native-storage-original-bindings.S. It must run after the component recipes,
   # because it adds its object to the archive they produce.
   "build-storage-bindings.py --component NativeUfs --archive libShengUfs.a --directory build/sheng-ufs",
-  # Selected for root authentication, not for its transport: munch's DTS has no virtio,mmio node,
-  # so the driver never probes. It provides native_verified_block_root_authorized(), which
-  # OWNER_ROOT_AUDIT calls, and that function reaches ShengUfs through the weak
-  # native_ufs_block_authenticates(). The archive that the kernel links is overridden by
-  # CONFIG_XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE (the verified bundle); this step builds the plain one.
+  # The plain Virtio block transport. Its verified bundle (--verified-root-bundle) is the
+  # archive CONFIG_XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE names, and that bundle is a qualification
+  # artifact this repository does not ship, so stage 1a turns the switch off and links this
+  # plain archive. RamBlock's bindings step still cross-checks against its bindings.json.
   "component:VirtioMmioBlock",
   # Same 12 original storage symbols as ShengUfs, but this object imports only 11 of them, so the
   # recorded file is read as a superset (--subset) instead of requiring an exact match.

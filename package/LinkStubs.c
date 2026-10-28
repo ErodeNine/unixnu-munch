@@ -13,6 +13,15 @@ void native_legacy_display_probe(void);
 void native_legacy_display_probe(void)
 {
 }
+
+// offline-userspace-ladder.patch calls these from kern_exec/kern_sig regardless of the
+// display switch. Weak, so the real LegacyDisplayProbe.cpp definitions win when the
+// display archive returns.
+__attribute__((weak)) void native_legacy_paint_userspace_band(unsigned stage);
+__attribute__((weak)) void native_legacy_paint_userspace_band(unsigned stage)
+{
+	(void)stage;
+}
 #endif
 
 // ShengUfs imports this as a weak reference, which a kernel link still has to resolve.

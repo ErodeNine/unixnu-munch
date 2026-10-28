@@ -22,7 +22,11 @@ CONFIG_XNU_DT_PANIC_REGION=y
 # IOMedia, so IOFindBSDRoot waits ROOTDEVICETIMEOUT ten times and panics. Turning it on
 # selects -DNATIVE_VERIFIED_BLOCK=1 and force-loads libVerifiedRootProbe.a, whose signed
 # hash table and key come from the unchanged original OS image.
-CONFIG_XNU_VERIFIED_ROOT_PROBE=y
+# Stage 1a: the verified-root policy chain needs build/verified-root-os-xnu-bundle and
+# build/virtio-mmio-block-verified-bundle, which are qualification artifacts this repository
+# does not ship (the SystemOS policy producer is absent from the fork). Without them the kernel
+# link stops at XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE, so the chain is off for the first image.
+# CONFIG_XNU_VERIFIED_ROOT_PROBE is not set
 # Root authentication. bsd_init.c calls FSIOC_KERNEL_ROOTAUTH on the mounted root vnode and
 # panics at "rootvp not authenticated after mounting" unless owner_authorized is set. That value
 # comes only from the XNU_OWNER_ROOT_AUDIT block, and it becomes the decision only under
@@ -33,9 +37,9 @@ CONFIG_XNU_VERIFIED_ROOT_PROBE=y
 # has no virtio,mmio node - so it stays a read-only authentication library: it exports
 # native_verified_block_root_authorized(), which walks the IOMedia provider chain, and calls the
 # weak native_ufs_block_authenticates() that ShengUfs exports to authenticate the UFS window.
-CONFIG_XNU_OWNER_ROOT_AUDIT=y
-CONFIG_XNU_OWNER_ROOT_TRUST=y
-CONFIG_XNU_NATIVE_VIRTIO_BLOCK=y
+# CONFIG_XNU_OWNER_ROOT_AUDIT is not set
+# CONFIG_XNU_OWNER_ROOT_TRUST is not set
+# CONFIG_XNU_NATIVE_VIRTIO_BLOCK is not set
 # The userspace chain that launchd needs before its first instruction. Each switch is checked
 # by scripts/build-xnu-4k-baseline.sh:373-475, and the order is fixed: CACHE_MOUNT needs
 # ROOT_TRUST, CACHE_STARTUP needs CACHE_MOUNT, BOOT_MANIFEST needs CACHE_STARTUP, DATA_MOUNT
@@ -46,18 +50,18 @@ CONFIG_XNU_NATIVE_VIRTIO_BLOCK=y
 # in 044-76040-038.dmg) while Cryptex1,SystemOS carries the shared cache (54 files, 3.99 GB,
 # 044-76034-038.dmg). Without the union dyld finds no cache and initproc dies after exec.
 # The volume UUID is the one the verified-root-systemos policy is signed for.
-CONFIG_XNU_OWNER_CACHE_MOUNT=y
+# CONFIG_XNU_OWNER_CACHE_MOUNT is not set
 # Selects the cache at startup instead of through a dyld environment variable, and sets
 # commpage dyld_flags bit 3 so dyld does not demand an ignition ticket: there is no SEP here.
-CONFIG_XNU_OWNER_CACHE_STARTUP=y
+# CONFIG_XNU_OWNER_CACHE_STARTUP is not set
 # Publishes /chosen/boot-manifest-hash, a SHA-384 over both authenticated volume envelopes.
-CONFIG_XNU_OWNER_BOOT_MANIFEST=y
-CONFIG_XNU_OWNER_UNION_SYSTEMOS=y
+# CONFIG_XNU_OWNER_BOOT_MANIFEST is not set
+# CONFIG_XNU_OWNER_UNION_SYSTEMOS is not set
 # Mounts the embedded Data seed as the writable /private/var. The seed is
 # build/owner-data-fixture/owner-data-32.cdr (32 MiB, the original private/var), which the
 # payload already carries as scratch-data.img; its volume UUID is from that seed's report.
 # CONFIG_XNU_NATIVE_RAM_BLOCK is set below: the md0 route is measured to fail.
-CONFIG_XNU_OWNER_DATA_MOUNT=y
+# CONFIG_XNU_OWNER_DATA_MOUNT is not set
 CONFIG_XNU_OWNER_DATA_VOLUME_UUID="B0B12459-4F23-4E03-9B64-A902959309AA"
 # The Data mount must go through the RamBlock IOKit device, not /dev/md0. Measured on hardware
 # (2026-10-26, panic screen): with DATA_MOUNT but without this switch the kernel panics
@@ -92,8 +96,8 @@ CONFIG_XNU_QCOM_USB_DEBUG=y
 # as TUNABLE(bool, ..., false), kernel_startup_tunable_init() reads it through
 # PE_parse_boot_argn, and proc_should_trigger_panic() returns false on it before it looks at
 # POSIX_SPAWN_PANIC_ON_CRASH, which is the path watchdogd's _PanicOnCrash sets.
-CONFIG_XNU_VERIFIED_ROOT_ARCHIVE="{tree}/build/verified-root-os-xnu-bundle/libVerifiedRootProbe.a"
-CONFIG_XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE="{tree}/build/virtio-mmio-block-verified-bundle/libVirtioMmioBlock.a"
+# CONFIG_XNU_VERIFIED_ROOT_ARCHIVE is not set
+# CONFIG_XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE is not set
 CONFIG_XNU_BUILD_ARCHIVES=y
 CONFIG_XNU_EXTRA_LD_ARCHIVES="{tree}/build/link-stubs/libLinkStubs.a"
 # The A650 GPU path is not provided by a catalog component yet.
