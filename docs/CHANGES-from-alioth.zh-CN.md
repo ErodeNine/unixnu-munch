@@ -64,3 +64,15 @@
   `armcpu-spi-ipi`、`armcpu-self-ipi`）、PCIe 写入步骤（`pcie=9`、
   `pcie_skip=32`）和定时重启（`sheng-autoreset=120`）。alioth 实测 SMP 会冻结，
   PCIe 只验证到只读步骤；定时重启还会抹掉首轮 bring-up 依赖的屏幕证据。
+
+## 阶段 1：不启用显示与触控 archive
+
+`build-gop-legacy-display.py` 需要 `build/xnu-prelink/native-owner-mobile-graphics-candidate.macho`
+与 `build/display-analysis/mobile-graphics-legacy-abi.json`，本仓库没有这两份资格产物（alioth
+在自己的认证流程里生成）。首个镜像因此去掉该 archive、`build-munch-touch.py`、
+`component:ShengHidInput`、`build-munch-pcie.py`，关闭 `CONFIG_XNU_NATIVE_LEGACY_DISPLAY`，
+并不再传触控参数。
+
+内核仍通过 `PE_current_console` 在帧缓冲上绘制启动进度和 panic 文本
+（`build-boot-progress.py`），并可用 `component:QcomXnuUsbDebug` 从 USB CDC-ACM 输出日志。
+等候选内核与运行时 ABI 观测就位后，阶段 2 再恢复显示与触控。

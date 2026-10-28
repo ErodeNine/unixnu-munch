@@ -70,3 +70,16 @@ IPC/QUPv3 register windows.
   (`pcie=9`, `pcie_skip=32`) and the timed reset (`sheng-autoreset=120`).
   alioth measured SMP freezes and the PCIe steps only reached read-only; a timed
   reset would also erase the panel evidence a first bring-up depends on.
+
+## Stage 1: no display or touch archive
+
+`build-gop-legacy-display.py` needs `build/xnu-prelink/native-owner-mobile-graphics-candidate.macho`
+and a recorded `build/display-analysis/mobile-graphics-legacy-abi.json`, neither of which this
+repository ships; alioth staged them from its own qualification runs. The first image therefore
+drops that archive, `build-munch-touch.py`, `component:ShengHidInput` and `build-munch-pcie.py`,
+sets `CONFIG_XNU_NATIVE_LEGACY_DISPLAY` off, and stops passing the touch arguments.
+
+The kernel still draws boot progress and panic text on the frame buffer through
+`PE_current_console` (`build-boot-progress.py`), and `component:QcomXnuUsbDebug` carries the log
+over USB CDC-ACM. Stage 2 re-enables display and touch once the candidate and the runtime ABI
+observation are staged.

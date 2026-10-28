@@ -9,14 +9,10 @@ description = "Xiaomi Redmi K40S (munch, 22021211RC)"
 kit = "munch"
 
 [components]
-# ShengHidInput publishes the board touch core's finger set as an IOHIDDevice. It is a board
-# driver, pinned as a submodule of this repository (drivers/ShengHidInput) as the device
-# repository specification requires. It is not listed below because its build is the one
-# exception to the component form: sheng invokes build-sheng-hid-input.py from its display
-# recipe and archives the result into the force-loaded late archive, and this board does the
-# same (scripts/build-gop-legacy-display.py). Selecting it here as well would run the recipe a
-# second time on its own, where it cannot find the reference candidate alias or Homebrew's
-# llvm, and its output is never archived by the generic pipeline anyway.
+# ShengHidInput is pinned as a submodule (drivers/ShengHidInput) but its archive belongs to
+# the display/touch stage: build-sheng-hid-input.py archives into the force-loaded display
+# archive, which the first image does not build. It stays in include because the component
+# source is fetched either way; nothing links it until the touch archive returns.
 include = ["ArmDTPlatform", "ArmCpu", "SoftwareAES", "ShengUfs", "ShengHidInput", "VirtioMmioBlock", "RamBlock", "GopFramebuffer", "XnuPrelink", "DarwinBoot", "AppleKeyStoreState", "QcomXnuUsbDebug"]
 
 [userdata]
@@ -75,25 +71,15 @@ archives = [
   "build-link-stubs.py",
   "build-libpthread-kernel.py",
   "component:AppleKeyStoreState",
-  # The GOP display path. Builds libNativeLegacyDisplay.late.a, whose absolute bindings to the
-  # prelinked IOMobileFramebufferLegacy are re-proven against this kernel on every run. It must
-  # run after the driver recipes above, because it reads their compile records.
-  "build-gop-legacy-display.py",
-  "build-munch-pcie.py",
+  # The CDC-ACM console over DWC3: the only log channel the first image has besides
+  # the kernel frame buffer drawn by build-boot-progress.py.
   "component:QcomXnuUsbDebug",
-  # Touch. QcomGeniSpi is the GENI SPI controller; ShengHidInput is the IOHIDFamily
-  # consumer that turns the probe's native_touch_* seqlock into HID digitizer events.
-  # The board's own FocalTech FT5652 probe and protocol come from kits/munch-touch, built by
-  # build-munch-touch.py. It supplies the finger set only; ShengHidInput below is what turns
-  # that into an input device.
-  "build-munch-touch.py",
-  # ShengHidInput's recipe produces NativeHidInput.late.o and hid-original-bindings.o. This
-  # step builds them; the display recipe below is what archives them into the force-loaded
-  # late archive, which is the only reason they link at all. Earlier images compiled
-  # NativeHidInput.cpp inside the touch kit's archive, which is not force-loaded, so the
-  # linker dropped the object and every image ran the touch core with no HID device at all
-  # (boot-usb70: contacts 2, interrupt line low 879 times, hid 0).
-  "component:ShengHidInput",
+  # The display and touch archives are a later stage. They need a qualified bootstrap
+  # candidate (build/xnu-prelink/*candidate.macho) and a recorded runtime ABI observation
+  # that this repository does not ship, so the first image builds without
+  # build-gop-legacy-display.py, build-munch-touch.py, component:ShengHidInput and
+  # build-munch-pcie.py. The kernel still draws boot progress and panics on the frame
+  # buffer through PE_current_console, and logs over USB.
 ]
 
 [firmware]
@@ -453,19 +439,19 @@ kernel_args = [
   # H1 probe: does the touch probe's RPMh L11C vote, made concurrently on another core, take
   # the USB PHY rail down? The CDC device leaves the bus at t~5 s, which is when that vote runs.
   # Touch is off for this round only.
-  "native-touch=1",
+  # "native-touch=1",  # touch archive is a later stage
   # The HID half. NativeHidInput only registers the touch sink when this argument is 1
   # (ShengHidInput-*/NativeHidInput.cpp:291,303); without it the frame loop reads contacts and
   # drops them, because publish() finds no sink. Measured 2026-10-28 on boot-usb57: the probe
   # started (TOUCH start=1) and the desktop came up, but nothing reached the system.
   # The reference board passes the same argument.
-  "sheng-touch-hid=1",
+  # "sheng-touch-hid=1",
   # Publishes the digitizer as its own IOHIDDevice, the way the reference board does. The
   # combined device has never reached the window server here: reports are attempted (hid
   # rises), handleReport refuses them (hres=1), and edge still counts real touches. The
   # driver already implements the split (NativeHidInput.cpp setTouchOnly /
   # native_hid_touch_allocate); this argument is the only thing that was missing.
-  "sheng-touch-split=1",
+  # "sheng-touch-split=1",
   # pipa-gpu=<mode>: the A650 probe. Mode 1 only reads -- the GPU's clock sources in the
   # global clock controller and the fuses that say which part this is -- so a wrong address
   # cannot wedge the kernel and the route can be checked before anything is written.
@@ -478,7 +464,7 @@ kernel_args = [
   # native_legacy_display_late_probe, the second of the two start paths the driver adaption
   # guide names. Without this argument the object is linked but never started, which is what
   # every image up to boot-usb73 did: contacts arrived and no report was ever published.
-  "offline-hid-input=1",
+  # "offline-hid-input=1",  # no HID publisher in the first image
   # Screenshot registration. Proven harmless on boot-usb87: the home screen appeared at ~88 s
   # with it enabled, and no capture had even been requested. Kept on so the frame buffer can be
   # read back over the control socket once the USB link is stable.
