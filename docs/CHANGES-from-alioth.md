@@ -52,3 +52,14 @@ IPC/QUPv3 register windows.
 - `[userdata]` LBAs are alioth's GPT. Re-read them from the munch GPT before flashing.
 - `[payload] dram_size` is 8 GiB. Change to `0x180000000` (6 GiB) or
   `0x300000000` (12 GiB) for those variants.
+
+## First-bootable changes
+
+- `package/LegacyDisplayProbe.cpp` calls `native_gpu_probe()` through a weak
+  declaration. The Adreno650 driver tree (`drivers/Adreno650`) is not part of this
+  repository and the A650 archive is a later bring-up stage, so an image built
+  without it still links and boots the display path.
+- `configs/munch_defconfig` no longer sets `CONFIG_XNU_NATIVE_ADRENO` (and its
+  archive), and `board.toml` no longer runs `build-adreno650.py` or passes
+  `pipa-gpu=` / `sheng-gpu-addon=`. Re-enable them together when the Adreno650
+  driver is added as a feed source.

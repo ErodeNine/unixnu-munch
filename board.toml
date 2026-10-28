@@ -80,7 +80,6 @@ archives = [
   # run after the driver recipes above, because it reads their compile records.
   "build-gop-legacy-display.py",
   "build-munch-pcie.py",
-  "build-adreno650.py",
   "component:QcomXnuUsbDebug",
   # Touch. QcomGeniSpi is the GENI SPI controller; ShengHidInput is the IOHIDFamily
   # consumer that turns the probe's native_touch_* seqlock into HID digitizer events.
@@ -472,10 +471,8 @@ kernel_args = [
   # cannot wedge the kernel and the route can be checked before anything is written.
   # Mode 6 adds CX power-on, the GPU SMMU clock and the 200 MHz GMU clock. Judgement line:
   # "GPU m1 gcc=ok cc=ok smmu=ok gpu=ok io=0".
-  "pipa-gpu=7",
   # The PCIe controller steps; step 1 only reads, criterion gcc pcie_0_gdscr = 0x22f001.
   # Mounts the payload addon; the wallpaper overlay arrives through it.
-  "sheng-gpu-addon=1",
   "pcie=9",
   "pcie_skip=32",
   # Starts the HID publisher itself. The publisher is an IOHIDDevice compiled into this kernel,

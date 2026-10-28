@@ -913,8 +913,12 @@ void native_legacy_display_late_probe(void) {
 	native_hid_input_probe();
 
 	// The A650 probe, at the point the reference board calls it. Opt-in through pipa-gpu=<mode>.
-	extern void native_gpu_probe(void);
-	native_gpu_probe();
+	// Weak: the Adreno650 archive is a later bring-up stage and is not part of the first
+	// bootable image, so an image built without it links and boots the display path unchanged.
+	extern void native_gpu_probe(void) __attribute__((weak));
+	if (native_gpu_probe) {
+		native_gpu_probe();
+	}
 
 	// The Wi-Fi controller's power and clock steps. Opt-in through pcie=<n>; step 1 only reads.
 	extern void munch_pcie_init(void);

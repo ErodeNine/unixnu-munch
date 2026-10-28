@@ -11,6 +11,7 @@
 #   Platforms/Xiaomi/munchPkg/       DSC, FDF, memory map, configuration map
 #   Resources/Configs/munch.toml    UEFI FD base/size and Android boot image layout
 #   Resources/DTBs/munch.dts/.dtb   firmware device tree appended to the boot image
+#   Silicium-ACPI/.../munch/        DSDT package the DSC names (currently alioth's)
 #   Binaries/munch/                 vendor DXE inputs
 #
 # The vendor DXE set is the SM8250 reference set shipped in Binaries/alioth.
@@ -25,11 +26,13 @@ overlay=$(cd "$(dirname "$0")" && pwd)
   exit 1
 }
 
-install -d "$uefi/Platforms/Xiaomi" "$uefi/Resources/Configs" "$uefi/Resources/DTBs"
+install -d "$uefi/Platforms/Xiaomi" "$uefi/Resources/Configs" "$uefi/Resources/DTBs" \
+  "$uefi/Silicium-ACPI/Platforms/Xiaomi"
 rm -rf "$uefi/Platforms/Xiaomi/munchPkg"
 cp -a "$overlay/munchPkg" "$uefi/Platforms/Xiaomi/munchPkg"
 cp -a "$overlay/Resources/Configs/munch.toml" "$uefi/Resources/Configs/munch.toml"
 cp -a "$overlay/Resources/DTBs/munch.dts" "$uefi/Resources/DTBs/munch.dts"
+cp -a "$overlay/Silicium-ACPI/Platforms/Xiaomi/munch" "$uefi/Silicium-ACPI/Platforms/Xiaomi/munch"
 
 # The preflight check (scripts/check-munch.py) requires every Binaries/munch
 # input named by the DSC/FDF includes. The SM8250 reference set is byte-identical
