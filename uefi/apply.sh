@@ -35,10 +35,15 @@ cp -a "$overlay/Resources/DTBs/munch.dts" "$uefi/Resources/DTBs/munch.dts"
 cp -a "$overlay/Silicium-ACPI/Platforms/Xiaomi/munch" "$uefi/Silicium-ACPI/Platforms/Xiaomi/munch"
 
 # The preflight check (scripts/check-munch.py) requires every Binaries/munch
-# input named by the DSC/FDF includes. The SM8250 reference set is byte-identical
-# to what the K40S needs for display-less (simple framebuffer) bring-up.
+# input named by the DSC/FDF includes. The SM8250 reference set is the starting
+# point; any file dropped under uefi/Binaries/munch/ overrides the same path,
+# which is how a driver extracted from the K40S's own XBL replaces the reference.
 if [ ! -d "$uefi/Binaries/munch" ]; then
   cp -a "$uefi/Binaries/alioth" "$uefi/Binaries/munch"
+fi
+if [ -d "$overlay/Binaries/munch" ]; then
+  cp -a "$overlay/Binaries/munch/." "$uefi/Binaries/munch/"
+  echo "apply.sh: applied board binary overrides from uefi/Binaries/munch"
 fi
 
 dtc -I dts -O dtb -o "$uefi/Resources/DTBs/munch.dtb" "$uefi/Resources/DTBs/munch.dts"
