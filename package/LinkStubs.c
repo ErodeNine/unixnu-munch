@@ -22,6 +22,20 @@ __attribute__((weak)) void native_legacy_paint_userspace_band(unsigned stage)
 {
 	(void)stage;
 }
+
+// offline-exec-count.patch and offline-exit-hook.patch call these from kern_exec/kern_exit
+// regardless of the display switch; same weak pattern.
+__attribute__((weak)) void native_legacy_count_exec(void);
+__attribute__((weak)) void native_legacy_count_exec(void)
+{
+}
+__attribute__((weak)) void native_legacy_note_exit(uint32_t pid, const char *name,
+    int namespace_value, uint32_t code, int signal);
+__attribute__((weak)) void native_legacy_note_exit(uint32_t pid, const char *name,
+    int namespace_value, uint32_t code, int signal)
+{
+	(void)pid; (void)name; (void)namespace_value; (void)code; (void)signal;
+}
 #endif
 
 // ShengUfs imports this as a weak reference, which a kernel link still has to resolve.

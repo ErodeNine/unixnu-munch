@@ -70,6 +70,12 @@ archives = [
   "build-link-stubs.py",
   "build-libpthread-kernel.py",
   "component:AppleKeyStoreState",
+  # The owner policies for the OS and SystemOS volumes are generated on the macOS runner
+  # (build repository: scripts/build-root-policy.py) under one owner key. These two steps
+  # turn them into the kernel-side VerifiedRoot bundle and the multi-policy block transport
+  # that CONFIG_XNU_VERIFIED_ROOT_ARCHIVE / XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE name.
+  "build-verified-root-probe.py --component os --include-systemos",
+  "build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle",
   # The CDC-ACM console over DWC3: the only log channel the first image has besides
   # the kernel frame buffer drawn by build-boot-progress.py.
   "component:QcomXnuUsbDebug",

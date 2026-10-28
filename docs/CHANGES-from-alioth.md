@@ -83,3 +83,20 @@ The kernel still draws boot progress and panic text on the frame buffer through
 `PE_current_console` (`build-boot-progress.py`), and `component:QcomXnuUsbDebug` carries the log
 over USB CDC-ACM. Stage 2 re-enables display and touch once the candidate and the runtime ABI
 observation are staged.
+
+## Owner root policies are generated in the pipeline
+
+The fork ships `build-owner-os-policy.py` for the OS volume but no producer for
+`build/verified-root-systemos`, so `build-verified-root-probe.py --include-systemos`
+could never run and `build-arm-driver.py NativeVirtioBlock --verified-root
+--verified-root-bundle` had no input. The build repository now carries
+`scripts/build-root-policy.py`, which signs both volumes under one generated owner
+key and verifies the RSA signature and every 4096-byte block:
+
+- OS: the expanded whole disk (`/dev/rdiskN`, 6,077,580,800 bytes, 1,483,785 blocks).
+- SystemOS: the IPSW member itself (`044-76034-038.dmg`, 3,303,014,400 bytes, 806,400 blocks).
+
+`board.toml` then builds the VerifiedRoot bundle and the multi-policy block
+transport, and the config chain (`VERIFIED_ROOT_PROBE`, `OWNER_ROOT_AUDIT/TRUST`,
+`NATIVE_VIRTIO_BLOCK`, the owner cache/boot-manifest/union/Data mounts) is on again.
+Display and touch remain stage 2.

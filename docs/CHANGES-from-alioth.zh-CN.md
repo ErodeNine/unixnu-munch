@@ -76,3 +76,18 @@
 内核仍通过 `PE_current_console` 在帧缓冲上绘制启动进度和 panic 文本
 （`build-boot-progress.py`），并可用 `component:QcomXnuUsbDebug` 从 USB CDC-ACM 输出日志。
 等候选内核与运行时 ABI 观测就位后，阶段 2 再恢复显示与触控。
+
+## 根卷策略在流水线里生成
+
+分支里只有 OS 卷的 `build-owner-os-policy.py`，没有 `build/verified-root-systemos`
+的生产者，导致 `build-verified-root-probe.py --include-systemos` 无法运行，
+`build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle` 也没有输入。
+构建仓新增 `scripts/build-root-policy.py`：用同一把自动生成的 owner 密钥为两个卷签名，
+并校验 RSA 签名与每一个 4096 字节块：
+
+- OS：展开后的整盘（`/dev/rdiskN`，6,077,580,800 字节，1,483,785 块）。
+- SystemOS：IPSW 成员文件本身（`044-76034-038.dmg`，3,303,014,400 字节，806,400 块）。
+
+`board.toml` 随后构建 VerifiedRoot bundle 与多策略块传输，配置链
+（`VERIFIED_ROOT_PROBE`、`OWNER_ROOT_AUDIT/TRUST`、`NATIVE_VIRTIO_BLOCK`、
+owner cache/boot-manifest/union/Data 挂载）恢复开启；显示与触控仍属阶段 2。
