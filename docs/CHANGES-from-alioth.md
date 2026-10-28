@@ -1,5 +1,7 @@
 # Changes from UniXNU-alioth
 
+English | [简体中文](CHANGES-from-alioth.zh-CN.md)
+
 Base: [`FFT-infra/UniXNU-alioth`](https://github.com/FFT-infra/UniXNU-alioth)
 commit `c567d24ba8870a0d027d31bd6dea6d4dc945f20d` (2026-10-28).
 

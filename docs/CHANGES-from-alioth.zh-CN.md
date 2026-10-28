@@ -1,0 +1,62 @@
+# 相对 UniXNU-alioth 的改动
+
+[English](CHANGES-from-alioth.md) | 简体中文
+
+基线：[`FFT-infra/UniXNU-alioth`](https://github.com/FFT-infra/UniXNU-alioth) 的
+`c567d24ba8870a0d027d31bd6dea6d4dc945f20d`（2026-10-28）。
+
+## 重命名
+
+所有板级标识按 `alioth → munch` / `Alioth → Munch` / `ALIOTH → MUNCH` 重命名：
+
+| alioth | munch |
+| --- | --- |
+| `dts/alioth.dts` | `dts/munch.dts` |
+| `configs/alioth_defconfig` | `configs/munch_defconfig` |
+| `kits/alioth-touch/` | `kits/munch-touch/` |
+| `kits/munch-touch/build-alioth-touch.py` | `build-munch-touch.py` |
+| `scripts/build-alioth-touch.py` | `scripts/build-munch-touch.py` |
+| `scripts/build-alioth-pcie.py` | `scripts/build-munch-pcie.py` |
+| `scripts/check-alioth.py` | `scripts/check-munch.py` |
+| `package/alioth_pcie.c` | `package/munch_pcie.c` |
+| `kits/munch-touch/{Alioth,Munch}Rpmh*` | `MunchRpmh*` |
+
+## 与 alioth 不同的板级取值
+
+| 值 | alioth | munch | 来源 |
+| --- | --- | --- | --- |
+| 型号 | Redmi K40 `M2012K11AC` | Redmi K40S `22021211RC` | 小米型号规则 |
+| SMBIOS SKU | `M2012K11AC` | `22021211RC` | `uefi/munchPkg/munch.dsc` |
+| `Resources/Configs` model_count | 3 | 1 | 单一零售型号 |
+| 固件 DTB `qcom,board-id` | `<0x2c 0x00>` | `<0x32 0x00>` | `munch-sm8250-overlay.dts` |
+| 固件 DTB model | `xiaomi alioth` | `xiaomi munch` | 同上 |
+| ADT `compatible` | `xiaomi,alioth` | `xiaomi,munch` | `dts/munch.dts` |
+
+其余取值刻意保持一致：SoC type 2（SM8250-AC）、内存图、`cont_splash_region`
+`0x9c000000+0x2300000`、1080×2400×32 帧缓冲、UFS 主机 `0x1d84000`、GENI SE4 触控
+（6 MHz，reset GPIO 33，IRQ GPIO 39）、QCA6390、IPC/QUPv3 寄存器窗口。
+
+## 新增
+
+- `uefi/`：munch 的 Mu-Silicium 平台（`munchPkg`）、其 `Resources` 文件，以及在
+  `uefi-alioth` 检出上安装覆盖层的 `apply.sh`。基础树不随仓库携带，只提交 munch 文件。
+- `docs/CHANGES-from-alioth.md` 与中文版。
+
+## 保持原样、需要 munch 实测确认
+
+- `feeds.toml` 将 `ShengUfs` 固定到 `FFT-infra/NativeUfs-alioth`；UFS stream id
+  `0x0e0` / `0x4e0` 是 SM8250 取值，K40S 使用同一主机。
+- `kits/munch-touch` 的常量来自 alioth 实测。munch 厂商 DTS 的 reset 是 GPIO 33，
+  而 kit 记录为 101，需在实机复核。
+- `[userdata]` 的 LBA 是 alioth 的 GPT。刷写前须按 munch GPT 重读。
+- `[payload] dram_size` 为 8 GiB。6 GiB 机型改为 `0x180000000`，12 GiB 改为
+  `0x300000000`。
+
+## 首个可启动镜像的调整
+
+- `package/LegacyDisplayProbe.cpp` 通过弱声明调用 `native_gpu_probe()`。
+  Adreno650 驱动树（`drivers/Adreno650`）不在本仓库，A650 archive 属于后续阶段，
+  没有它镜像仍可链接并启动显示路径。
+- `configs/munch_defconfig` 不再设置 `CONFIG_XNU_NATIVE_ADRENO`（及其 archive），
+  `board.toml` 不再运行 `build-adreno650.py`，也不再传 `pipa-gpu=` /
+  `sheng-gpu-addon=`。等 Adreno650 驱动作为 feed 源加入后一并恢复。

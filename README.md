@@ -1,5 +1,7 @@
 # UniXNU-munch
 
+English | [简体中文](README.zh-CN.md)
+
 Device repository for the **Xiaomi Redmi K40S / POCO F4** (`munch`, `22021211RC` /
 `22021211RG`), Qualcomm **SM8250-AC** (Snapdragon 870, kona), for
 [UniXNU](https://unixnu.com/).
