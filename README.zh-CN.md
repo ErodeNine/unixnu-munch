@@ -46,8 +46,8 @@ Bring-up 阶段。内容继承自 `UniXNU-alioth` 并完成改名；以下各项
 | UEFI 固件 | 已可构建 | `munchPkg` DSC/FDF，覆盖层在 `uefi/` |
 | 内核 | 已可构建 | 与 alioth 相同的 archive 链与 defconfig |
 | 存储 | 继承 alioth 的 device-verified | UFS stream `0x0e0` / `0x4e0` |
-| 显示 | 继承 alioth 的 implemented | GOP 帧缓冲，1080×2400 |
-| 输入 | 继承 alioth 的 implemented | FocalTech on SE4 |
+| 显示 | 阶段 2 | 阶段 1 只在内核帧缓冲上绘制启动进度与 panic；GOP 用户态后端需要资格候选内核 |
+| 输入 | 阶段 2 | FocalTech archive 随显示阶段一起恢复 |
 | GPU / Wi-Fi / 音频 / 电源 | 未实现 | 仅 A650 探针代码 |
 
 K40S 的面板控制器、触控 IC 批次和充电拓扑与 alioth 不同；前两者位于简易帧缓冲与 GENI SE4 路径之后，

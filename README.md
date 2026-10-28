@@ -54,8 +54,8 @@ measured on a K40S yet.
 | UEFI firmware | built | `munchPkg` DSC/FDF, overlay in `uefi/` |
 | Kernel | built | same archive chain and defconfig as alioth |
 | Storage | inherited device-verified on alioth | UFS stream ids `0x0e0` / `0x4e0` |
-| Display | inherited implemented on alioth | GOP framebuffer, 1080×2400 |
-| Input | inherited implemented on alioth | FocalTech on SE4 |
+| Display | stage 2 | stage 1 draws boot progress and panics on the kernel frame buffer; the GOP userspace backend needs a qualified candidate |
+| Input | stage 2 | the FocalTech archive returns with the display stage |
 | GPU / Wi-Fi / audio / power | not implemented | A650 probe only |
 
 The K40S panel controller, touch IC revision and charger topology differ from
