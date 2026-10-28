@@ -9,11 +9,11 @@ description = "Xiaomi Redmi K40S (munch, 22021211RC)"
 kit = "munch"
 
 [components]
-# ShengHidInput is pinned as a submodule (drivers/ShengHidInput) but its archive belongs to
-# the display/touch stage: build-sheng-hid-input.py archives into the force-loaded display
-# archive, which the first image does not build. It stays in include because the component
-# source is fetched either way; nothing links it until the touch archive returns.
-include = ["ArmDTPlatform", "ArmCpu", "SoftwareAES", "ShengUfs", "ShengHidInput", "VirtioMmioBlock", "RamBlock", "GopFramebuffer", "XnuPrelink", "DarwinBoot", "AppleKeyStoreState", "QcomXnuUsbDebug"]
+# ShengHidInput (drivers/ShengHidInput) and GopFramebuffer belong to the display/touch
+# stage: their archives are built by the display recipe, which the first image drops. The
+# driver refuses a selected component with no [kernel] archives entry, so both stay out of
+# include until build-gop-legacy-display.py returns.
+include = ["ArmDTPlatform", "ArmCpu", "SoftwareAES", "ShengUfs", "VirtioMmioBlock", "RamBlock", "XnuPrelink", "DarwinBoot", "AppleKeyStoreState", "QcomXnuUsbDebug"]
 
 [userdata]
 # Android's userdata on UFS LUN 0, read from the phone's GPT.
