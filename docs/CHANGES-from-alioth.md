@@ -65,3 +65,8 @@ IPC/QUPv3 register windows.
   archive), and `board.toml` no longer runs `build-adreno650.py` or passes
   `pipa-gpu=` / `sheng-gpu-addon=`. Re-enable them together when the Adreno650
   driver is added as a feed source.
+- `[payload] kernel_args` for the first image disables the three SMP arguments
+  (`sheng-smp`, `armcpu-spi-ipi`, `armcpu-self-ipi`), the PCIe write steps
+  (`pcie=9`, `pcie_skip=32`) and the timed reset (`sheng-autoreset=120`).
+  alioth measured SMP freezes and the PCIe steps only reached read-only; a timed
+  reset would also erase the panel evidence a first bring-up depends on.

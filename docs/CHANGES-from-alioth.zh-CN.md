@@ -60,3 +60,7 @@
 - `configs/munch_defconfig` 不再设置 `CONFIG_XNU_NATIVE_ADRENO`（及其 archive），
   `board.toml` 不再运行 `build-adreno650.py`，也不再传 `pipa-gpu=` /
   `sheng-gpu-addon=`。等 Adreno650 驱动作为 feed 源加入后一并恢复。
+- 首个镜像的 `[payload] kernel_args` 关闭了三个 SMP 参数（`sheng-smp`、
+  `armcpu-spi-ipi`、`armcpu-self-ipi`）、PCIe 写入步骤（`pcie=9`、
+  `pcie_skip=32`）和定时重启（`sheng-autoreset=120`）。alioth 实测 SMP 会冻结，
+  PCIe 只验证到只读步骤；定时重启还会抹掉首轮 bring-up 依赖的屏幕证据。
