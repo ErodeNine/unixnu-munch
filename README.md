@@ -52,7 +52,7 @@ measured on a K40S yet.
 | --- | --- | --- |
 | Configuration | built | `./unixnu defconfig/status/tree` resolve |
 | UEFI firmware | built | `munchPkg` DSC/FDF, overlay in `uefi/` |
-| Kernel | built | same archive chain and defconfig as alioth |
+| Kernel | built + packaged | `kernel.macho` 120.1 MB, `UniXNU.efi`, `SILICIUM_UEFI.fd`, `payload.img`, `boot.img` from build-18 |
 | Storage | inherited device-verified on alioth | UFS stream ids `0x0e0` / `0x4e0` |
 | Display | stage 2 | stage 1 draws boot progress and panics on the kernel frame buffer; the GOP userspace backend needs a qualified candidate |
 | Input | stage 2 | the FocalTech archive returns with the display stage |

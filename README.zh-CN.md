@@ -44,7 +44,7 @@ Bring-up 阶段。内容继承自 `UniXNU-alioth` 并完成改名；以下各项
 | --- | --- | --- |
 | 配置 | 已可构建 | `./unixnu defconfig/status/tree` 解析通过 |
 | UEFI 固件 | 已可构建 | `munchPkg` DSC/FDF，覆盖层在 `uefi/` |
-| 内核 | 已可构建 | 与 alioth 相同的 archive 链与 defconfig |
+| 内核 | 已构建并打包 | build-18 的 `kernel.macho` 120.1 MB、`UniXNU.efi`、`SILICIUM_UEFI.fd`、`payload.img`、`boot.img` |
 | 存储 | 继承 alioth 的 device-verified | UFS stream `0x0e0` / `0x4e0` |
 | 显示 | 阶段 2 | 阶段 1 只在内核帧缓冲上绘制启动进度与 panic；GOP 用户态后端需要资格候选内核 |
 | 输入 | 阶段 2 | FocalTech archive 随显示阶段一起恢复 |
