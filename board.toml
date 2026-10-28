@@ -76,6 +76,9 @@ archives = [
   # that CONFIG_XNU_VERIFIED_ROOT_ARCHIVE / XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE name.
   "build-verified-root-probe.py --component os --include-systemos",
   "build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle",
+  # build-xnu-4k-baseline.sh re-audits the linked storage objects and reads
+  # bindings.json next to each archive, including the verified bundle.
+  "build-storage-bindings.py --component NativeVirtioBlock --archive libVirtioMmioBlock.a --directory build/virtio-mmio-block-verified-bundle --subset",
   # The CDC-ACM console over DWC3: the only log channel the first image has besides
   # the kernel frame buffer drawn by build-boot-progress.py.
   "component:QcomXnuUsbDebug",
