@@ -116,6 +116,7 @@ def cpp_cmd(source, obj, json_path, extra_inc=None):
     cmd += ["-Wall", "-Wextra", "-Werror", "-Wno-unknown-warning-option", "-Wno-unused-parameter",
             "-Wno-c99-designator", "-Wno-reorder-init-list",
             "-Wno-deprecated-enum-enum-conversion", "-Wno-missing-designated-field-initializers",
+            "-Wno-unnecessary-virtual-specifier",
             "-I", str(ROOT / ".cache/xnu-work/osfmk")]
     if extra_inc:
         cmd += ["-I" + str(p) for p in extra_inc]

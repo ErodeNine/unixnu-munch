@@ -68,6 +68,7 @@ for source in sources:
                 # compiled it without -Werror); the kernel's record turns that into an error.
                 '-Wno-missing-field-initializers',
                 '-Wno-reorder-init-list', '-Wno-deprecated-enum-enum-conversion',
+                '-Wno-unnecessary-virtual-specifier',
                 ]
     result = subprocess.run(command, cwd=recipe['directory'], capture_output=True, text=True)
     if result.returncode:
