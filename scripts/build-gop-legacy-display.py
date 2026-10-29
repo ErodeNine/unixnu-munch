@@ -156,9 +156,19 @@ backend_text = backend_original.decode()
 
 
 def patch_backend(old, new):
+	# The component is a submodule that moves under us: FFT-infra/GopFramebuffer added
+	# `!half` to the direct-scanout guard and kIOMapCopybackCache to the client mapping
+	# between two of our builds. Each anchor therefore carries every shape it has had,
+	# and the replacement is derived from whichever one matched instead of being a
+	# second literal that has to be kept in step with it.
 	global backend_text
-	require(backend_text.count(old) == 1, 'display patch anchor is not unique: ' + old.splitlines()[0][:72])
-	backend_text = backend_text.replace(old, new, 1)
+	candidates = list(old) if isinstance(old, (list, tuple)) else [old]
+	for candidate in candidates:
+		if backend_text.count(candidate) == 1:
+			backend_text = backend_text.replace(
+				candidate, new(candidate) if callable(new) else new, 1)
+			return
+	require(False, 'display patch anchor is not unique: ' + candidates[0].splitlines()[0][:72])
 
 
 patch_backend(
@@ -229,18 +239,24 @@ patch_backend(
            !native_legacy_surface_bounds(panelW,panelH,video.v_rowBytes,bootMapping->getLength(),bootMapping->getLength())) {''')
 
 patch_backend(
-	r'''        if(directOn && !gpuBypass && !latchRequest) {''',
-	r'''        if(directOn && !gpuBypass && !latchRequest && !gLegacyLogicalW) {''')
+	[r'''        if(directOn && !half && !gpuBypass && !latchRequest) {''',
+	 r'''        if(directOn && !gpuBypass && !latchRequest) {'''],
+	lambda old: old.replace(' && !latchRequest)', ' && !latchRequest && !gLegacyLogicalW)'))
 patch_backend(
-	r'''        if(!gpuBypass && native_legacy_gpu_offer(this,memory,sourceStride,width,height)) {''',
-	r'''        if(!gpuBypass && !gLegacyLogicalW && native_legacy_gpu_offer(this,memory,sourceStride,width,height)) {''')
+	[r'''        if(!gpuBypass && native_legacy_gpu_offer(this,memory,sourceStride,width,height,half?halfOfferFormat():NGP_BGRX8888)) {''',
+	 r'''        if(!gpuBypass && native_legacy_gpu_offer(this,memory,sourceStride,width,height)) {'''],
+	lambda old: old.replace('if(!gpuBypass && ', 'if(!gpuBypass && !gLegacyLogicalW && '))
 
 patch_backend(
-	r'''        IOMemoryMap *source=memory->map(kIOMapAnywhere|kIOMapReadOnly);
+	[r'''        IOMemoryMap *source=memory->map(kIOMapAnywhere|kIOMapReadOnly|kIOMapCopybackCache);
         if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {''',
-	r'''        IOMemoryMap *source=memory->map(kIOMapAnywhere|kIOMapReadOnly);
-        const uint64_t sourceOffset=gLegacyLogicalW?((uint64_t)gLegacyOffY*sourceStride+(uint64_t)gLegacyOffX*4):0;
-        if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {''')
+	 r'''        IOMemoryMap *source=memory->map(kIOMapAnywhere|kIOMapReadOnly);
+        if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {'''],
+	lambda old: old.replace(
+		'        if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {',
+		'        const uint64_t sourceOffset=gLegacyLogicalW?((uint64_t)gLegacyOffY*sourceStride+(uint64_t)gLegacyOffX*4):0;'
+		'\n'
+		'        if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {'))
 
 patch_backend(
 	r'''        if(!native_legacy_copy_layout(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
