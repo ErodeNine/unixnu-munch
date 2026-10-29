@@ -88,6 +88,13 @@ archives = [
   "build-munch-touch.py",
   "component:ShengHidInput",
   "build-gop-legacy-display.py",
+  # The Adreno 650 kernel GPU driver (drivers/Adreno650, the pipa fork of NativeAdreno:
+  # GMU/HFI cold start, SQE and zap firmware, GPU and GMU SMMU contexts, ring, submission,
+  # user client and publication) plus package/GpuProbe.cpp, which exports native_gpu_probe()
+  # for the late display probe. Its sources are submodules this repository carries because
+  # Adreno650 is not in UniXNU's component catalogue; build-local.sh exports ADRENO650_DRIVER
+  # and ADRENO650_KITS. Modes are selected at boot with pipa-gpu=<n>.
+  "build-adreno650.py",
 ]
 
 [firmware]
@@ -434,7 +441,7 @@ kernel_args = [
   "boot-diag-resume=0",
   # Labels the diagnostic page and the live banner ("[mun-b1] ..."), so a photograph
   # names the image it came from. Change it with each tested build.
-  "sheng-build-tag=mun-b2",
+  "sheng-build-tag=mun-b3",
   # qcom-usb-debug=1 starts the CDC-ACM console over the board's DWC3 controller. It tees
   # printf, IOLog, kprintf and the panic drain onto a USB serial port, so the log can be read
   # live on the host instead of photographed off the panel. The firmware already brings the
@@ -473,6 +480,12 @@ kernel_args = [
   # cannot wedge the kernel and the route can be checked before anything is written.
   # Mode 6 adds CX power-on, the GPU SMMU clock and the 200 MHz GMU clock. Judgement line:
   # "GPU m1 gcc=ok cc=ok smmu=ok gpu=ok io=0".
+  # Mode 7 builds the GMU's SMMU context. It was refused with kIOReturnNotPermitted because
+  # the pinned ArmSmmu4K required an unused S2CR to read exactly FAULT, while this Adreno
+  # SMMU leaves CBNDX 0xff in the type (pipa measured 0x000203ff on the same part); the pipa
+  # branch of ArmSmmu4K, which kits/ArmSmmu4K now points at, checks only the type. The row to
+  # read is "GMUCTX ..." on the console, then "GPUROW13/14".
+  "pipa-gpu=7",
   # "pcie=9",  # off for the first image: only the read-only step was measured on alioth
   # "pcie_skip=32",
   # Starts the HID publisher itself. The publisher is an IOHIDDevice compiled into this kernel,

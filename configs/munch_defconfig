@@ -121,11 +121,11 @@ CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y
 # value is absolute and satisfies both checks -- unixnu's in scripts/unixnu/kernel.py:145,
 # which runs from the checkout root, and build-xnu-4k-baseline.sh:637, which runs from the
 # tree. A relative path satisfied neither.
-# GPU is a later stage: the Adreno650 driver tree is not part of this repository,
-# so the first bootable image links without it. package/LegacyDisplayProbe.cpp
-# calls native_gpu_probe() weakly, and the call is skipped when it is absent.
-# CONFIG_XNU_NATIVE_ADRENO is not set
-# CONFIG_XNU_NATIVE_ADRENO_ARCHIVE is not set
+# The driver and the kits it needs (ArmSmmu4K, AdrenoPM4, AdrenoFirmware) are submodules
+# of this repository, and build-local.sh exports ADRENO650_DRIVER/ADRENO650_KITS for the
+# recipe; Adreno650 is not in UniXNU's component catalogue, so the tree carries neither.
+CONFIG_XNU_NATIVE_ADRENO=y
+CONFIG_XNU_NATIVE_ADRENO_ARCHIVE="{tree}/build/adreno740/libAdreno740.a"
 # NATIVE_MOBILE_DISPLAY stays off. offline-component-load-probes.patch calls
 # native_mobile_display_provider_probe() under that switch, and the definition lives in
 # NativeMobileDisplay.cpp, which this archive does not carry. Turning it on adds an undefined

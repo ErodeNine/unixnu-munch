@@ -1,3 +1,11 @@
 [submodule "drivers/ShengHidInput"]
 	path = drivers/ShengHidInput
 	url = https://github.com/UniXNU/ShengHidInput.git
+[submodule "kits/ArmSmmu4K"]
+	path = kits/ArmSmmu4K
+	url = https://github.com/xVanTuring/ArmSmmu4K.git
+	branch = pipa
+[submodule "drivers/Adreno650"]
+	path = drivers/Adreno650
+	url = https://github.com/xVanTuring/Adreno650.git
+	branch = pipa

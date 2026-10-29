@@ -217,6 +217,10 @@ __attribute__((weak)) uint64_t native_gpu_perf_vote[2];
  * hres was event 3's result, not handleReport's. */
 __attribute__((weak)) uint32_t native_hid_input_events[8];
 __attribute__((weak)) int native_hid_input_results[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+/* HidInputProbe.cpp defines the real one, but the bootstrap pass links this archive
+ * without it (the HID archive is stripped there) and the kernel link treats the
+ * reference as a hard undefined, not a weak import. */
+__attribute__((weak)) uint32_t native_hid_props_status;
 /* ShengHidInput's NativeHidInput.cpp calls these three, which the reference board defines in
  * its own package. Without them the kernel link fails the moment the object is actually
  * pulled in, which is what happened the first time it was archived into the force-loaded late
