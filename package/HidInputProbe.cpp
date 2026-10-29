@@ -160,16 +160,24 @@ extern "C" int native_hid_input_probe(void) {
     return result;
   }
   native_hid_stage = 8;
-  // A second IOHIDDevice carrying only the digitizer. The combined device above publishes
-  // whatever the touch core hands it, and on this board that has never reached the window
-  // server: reports are attempted (hid rises) and handleReport refuses them (hres=1), while
-  // edge keeps counting real touches. sheng publishes the digitizer as its own service when
-  // sheng-touch-split=1, and the driver already carries both halves
-  // (NativeHidInput.cpp:267 setTouchOnly / :320 native_hid_touch_allocate); only the call was
-  // missing here. Gated on the same sheng-touch-hid=1 the reference requires.
-  unsigned split = 0, touchHid = 0;
-  if (PE_parse_boot_argn("sheng-touch-split", &split, sizeof split) && split == 1 &&
-      PE_parse_boot_argn("sheng-touch-hid", &touchHid, sizeof touchHid) && touchHid == 1) {
+  // A second IOHIDDevice carrying only the digitizer, and the only one that should carry it.
+  // NativeHidInput.cpp:132 states the reason the combined device cannot serve the panel: a
+  // digitizer is matched by primary usage page/usage (Digitizer/Touch Screen) plus Built-In,
+  // which a keyboard-first descriptor never provides. The split device exists precisely to
+  // publish that personality on its own.
+  //
+  // This used to be gated on sheng-touch-hid=1 as well, so the split device only appeared
+  // next to a combined device that was already advertising a Touch Screen collection. Two
+  // digitizers on one panel is not a fallback: backboardd keys its touch pipeline off the
+  // matched service, and boot-usb64 through boot-usb71 (build-6, 2026-10-29) measured exactly
+  // that shape: tsplit=1 with the split device started, hres=0 so the kernel accepted every
+  // report, and edge=1,0 because no digitizer event ever reached a dispatch wrapper.
+  //
+  // The reference board runs one digitizer. sheng-touch-split=1 alone selects the split
+  // device; sheng-touch-hid=0 keeps the combined device off the digitizer collection while it
+  // still publishes the keyboard, so exactly one Touch Screen service exists on this panel.
+  unsigned split = 0;
+  if (PE_parse_boot_argn("sheng-touch-split", &split, sizeof split) && split == 1) {
     IOService *touch = native_hid_touch_allocate();
     native_hid_touch_object = (uintptr_t) touch;
     bool touchStarted = touch && touch->metaCast("IOHIDDevice") && touch->init() &&
