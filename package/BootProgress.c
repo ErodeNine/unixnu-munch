@@ -1336,8 +1336,10 @@ static void ufs_time_report(unsigned now) {
   static unsigned gpuRowsSentAt;
   if (&native_gpu_rows && native_gpu_rows[0][0] && now >= gpuRowsSentAt + 15) {
     // The summary alone hides every step after it: modes 7 and above report in the GMU and
-    // HFI rows. Print the summary and those, one line each.
-    static const int rows[] = {0, 6, 7, 13, 14, 15};
+    // HFI rows, mode 8 in the GX row, and modes 9 to 11 in the GPU context, CP, zap, IRQ and
+    // publication rows. Print every row the probe can fill, one line each; empty rows are
+    // skipped, so the console carries exactly the steps that ran.
+    static const int rows[] = {0, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
     for (unsigned r = 0; r < sizeof rows / sizeof rows[0]; ++r) {
       const char *text = native_gpu_rows[rows[r]];
       if (!text[0]) continue;
@@ -1419,8 +1421,10 @@ static void touch_time_report(unsigned now) {
   static unsigned gpuRowsSentAt;
   if (&native_gpu_rows && native_gpu_rows[0][0] && now >= gpuRowsSentAt + 15) {
     // The summary alone hides every step after it: modes 7 and above report in the GMU and
-    // HFI rows. Print the summary and those, one line each.
-    static const int rows[] = {0, 6, 7, 13, 14, 15};
+    // HFI rows, mode 8 in the GX row, and modes 9 to 11 in the GPU context, CP, zap, IRQ and
+    // publication rows. Print every row the probe can fill, one line each; empty rows are
+    // skipped, so the console carries exactly the steps that ran.
+    static const int rows[] = {0, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28};
     for (unsigned r = 0; r < sizeof rows / sizeof rows[0]; ++r) {
       const char *text = native_gpu_rows[rows[r]];
       if (!text[0]) continue;
