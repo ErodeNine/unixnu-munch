@@ -376,6 +376,9 @@ kernel_args = [
   "offline-legacy-pm=1",
   "offline-legacy-register=1",
   "offline-legacy-gop=1",
+  # Publish display-scale=3 so UIKit lays out at the iPhone10,3 3x scale instead of
+  # comparing 1080x2400 scanout against the identity at an implied 1x.
+  "offline-legacy-unit-scale=3",
   "offline-legacy-phase=4",
   "offline-legacy-validate=1",
   "offline-legacy-transfer=1",
@@ -452,6 +455,9 @@ kernel_args = [
   # the USB PHY rail down? The CDC device leaves the bus at t~5 s, which is when that vote runs.
   # Touch is off for this round only.
   "native-touch=1",
+  # Temporary: reset the part and read only the interrupt/work counters for 30 s so a
+  # held finger separates "sensor sees nothing" from "HID publication lost it".
+  "native-touch-diag=1",
   # The HID half. NativeHidInput only registers the touch sink when this argument is 1
   # (ShengHidInput-*/NativeHidInput.cpp:291,303); without it the frame loop reads contacts and
   # drops them, because publish() finds no sink. Measured 2026-10-28 on boot-usb57: the probe
