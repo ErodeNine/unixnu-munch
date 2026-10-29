@@ -17,8 +17,11 @@
 
     memory@80000000 {
         device_type = "memory";
-        // The 8 GiB model: one bank from 0x80000000.
-        reg = <0 0x80000000 0x0 0x3bb00000>, <0 0xc0000000 0x2 0xc0000000>;
+        // The 12 GiB model. The ADT handoff carries one dram-base and one
+        // dram-size, so the two banks the hardware tree describes are handed
+        // over as the single range that spans them, the same shape the 8 GiB
+        // image used: 0x80000000 + 0x300000000 ends at 0x380000000.
+        reg = <0 0x80000000 0x3 0x00000000>;
     };
 
     reserved-memory {
