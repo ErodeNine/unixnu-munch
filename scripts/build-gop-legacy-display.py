@@ -141,8 +141,144 @@ for i in range(168, 358):
 header += '};\nstatic_assert(sizeof(IOMobileFramebufferLegacy)==0x18a0,"Actual original instance extent");\n'
 (OUT / 'OriginalLegacyFramebufferABI.h').write_text(header)
 
-# The owned backend, compiled with the kernel's own flags through the generic driver recipe.
-print(run(['python3', ROOT / 'scripts/build-arm-driver.py', 'NativeLegacyDisplay'], text=True), end='')
+# The owned backend, compiled from a patched copy.
+#
+# offline-legacy-logical=1 presents this 1080x2400 panel as the iPhone X mode that the board's
+# identity declares (1125x2436, 375x812 pt at 3x). UIKit picks its status bar and layout from
+# that mode, and 1080x2400 at scale 3 is 360x800 pt, which no iPhone has: "No status bar visual
+# provider for screen", the red band. The client then renders 1125x2436 and this backend copies
+# the centered 1080x2400 rectangle into the panel. Off by default, so the native mode stays one
+# boot argument away. The edits are applied to the component source and restored afterwards, so
+# the UniXNU checkout stays clean between builds.
+backend = ROOT / 'drivers/GopFramebuffer/NativeLegacyDisplay.cpp'
+backend_original = backend.read_bytes()
+backend_text = backend_original.decode()
+
+
+def patch_backend(old, new):
+	global backend_text
+	require(backend_text.count(old) == 1, 'display patch anchor is not unique: ' + old.splitlines()[0][:72])
+	backend_text = backend_text.replace(old, new, 1)
+
+
+patch_backend(
+	r'''class NativeLegacyDisplay : public IOMobileFramebufferLegacy {''',
+	r'''// The logical presentation state; see the recipe in scripts/build-gop-legacy-display.py.
+static uint32_t gLegacyLogicalW=0,gLegacyLogicalH=0;
+static int32_t gLegacyOffX=0,gLegacyOffY=0;
+class NativeLegacyDisplay : public IOMobileFramebufferLegacy {''')
+
+patch_backend(
+	r'''            installBootDimensions((uint32_t)video.v_width,(uint32_t)video.v_height);
+            uint32_t width=0,height=0;getDisplayDimensions(&width,&height);
+            valid=width==video.v_width && height==video.v_height;''',
+	r'''            unsigned logical=0;PE_parse_boot_argn("offline-legacy-logical",&logical,sizeof(logical));
+            if(logical==1 && video.v_width<=1125 && video.v_height<=2436) {
+                gLegacyLogicalW=1125;gLegacyLogicalH=2436;
+                gLegacyOffX=(int32_t)(gLegacyLogicalW-video.v_width)/2;
+                gLegacyOffY=(int32_t)(gLegacyLogicalH-video.v_height)/2;
+            }
+            installBootDimensions(gLegacyLogicalW?gLegacyLogicalW:(uint32_t)video.v_width,
+                gLegacyLogicalH?gLegacyLogicalH:(uint32_t)video.v_height);
+            uint32_t width=0,height=0;getDisplayDimensions(&width,&height);
+            valid=width==(gLegacyLogicalW?gLegacyLogicalW:(uint32_t)video.v_width) &&
+                height==(gLegacyLogicalH?gLegacyLogicalH:(uint32_t)video.v_height);''')
+
+patch_backend(
+	r'''            PE_Video blank={};
+            uint32_t bw=0,bh=0;getDisplayDimensions(&bw,&bh);
+            uint64_t blankLength=(uint64_t)bw*bh*4;
+            if(PE_current_console(&blank) || blank.v_baseAddr!=bootMapping->getPhysicalAddress() ||
+               blank.v_width!=bw || blank.v_height!=bh || blank.v_depth!=32 || blank.v_rotate ||
+               !native_legacy_surface_bounds(bw,bh,blank.v_rowBytes,bootMapping->getLength(),bootMapping->getLength())) {''',
+	r'''            PE_Video blank={};
+            const bool haveBlank=PE_current_console(&blank)==0;
+            uint32_t bw=0,bh=0;getDisplayDimensions(&bw,&bh);
+            const uint32_t blankW=gLegacyLogicalW?(uint32_t)blank.v_width:bw;
+            const uint32_t blankH=gLegacyLogicalH?(uint32_t)blank.v_height:bh;
+            uint64_t blankLength=(uint64_t)blankW*blankH*4;
+            if(!haveBlank || blank.v_baseAddr!=bootMapping->getPhysicalAddress() ||
+               blank.v_width!=blankW || blank.v_height!=blankH || blank.v_depth!=32 || blank.v_rotate ||
+               !native_legacy_surface_bounds(blankW,blankH,blank.v_rowBytes,bootMapping->getLength(),bootMapping->getLength())) {''')
+patch_backend(
+	r'''                bootMapping->getLength(),blank.v_rowBytes,bw,bh,0xff000000U)) {''',
+	r'''                bootMapping->getLength(),blank.v_rowBytes,blankW,blankH,0xff000000U)) {''')
+patch_backend(
+	r'''const uint64_t counts[4]={(uint64_t)bw*bh,0,0,0};''',
+	r'''const uint64_t counts[4]={(uint64_t)blankW*blankH,0,0,0};''')
+
+patch_backend(
+	r'''        PE_Video video={};
+        uint32_t width=0,height=0;getDisplayDimensions(&width,&height);''',
+	r'''        PE_Video video={};
+        const bool haveVideo=PE_current_console(&video)==0;
+        uint32_t width=0,height=0;getDisplayDimensions(&width,&height);''')
+patch_backend(
+	r'''        uint64_t allocation=native_legacy_surface_allocation(surface);
+        if(!memory || !memory->metaCast("IOMemoryDescriptor")''',
+	r'''        uint64_t allocation=native_legacy_surface_allocation(surface);
+        const uint32_t panelW=gLegacyLogicalW?(uint32_t)video.v_width:width;
+        const uint32_t panelH=gLegacyLogicalH?(uint32_t)video.v_height:height;
+        if(!memory || !memory->metaCast("IOMemoryDescriptor")''')
+patch_backend(
+	r'''           PE_current_console(&video) || video.v_baseAddr!=bootMapping->getPhysicalAddress() ||
+           video.v_width!=width || video.v_height!=height || video.v_depth!=32 || video.v_rotate ||
+           !native_legacy_surface_bounds(width,height,video.v_rowBytes,bootMapping->getLength(),bootMapping->getLength())) {''',
+	r'''           !haveVideo || video.v_baseAddr!=bootMapping->getPhysicalAddress() ||
+           video.v_width!=panelW || video.v_height!=panelH || video.v_depth!=32 || video.v_rotate ||
+           !native_legacy_surface_bounds(panelW,panelH,video.v_rowBytes,bootMapping->getLength(),bootMapping->getLength())) {''')
+
+patch_backend(
+	r'''        if(directOn && !gpuBypass && !latchRequest) {''',
+	r'''        if(directOn && !gpuBypass && !latchRequest && !gLegacyLogicalW) {''')
+patch_backend(
+	r'''        if(!gpuBypass && native_legacy_gpu_offer(this,memory,sourceStride,width,height)) {''',
+	r'''        if(!gpuBypass && !gLegacyLogicalW && native_legacy_gpu_offer(this,memory,sourceStride,width,height)) {''')
+
+patch_backend(
+	r'''        IOMemoryMap *source=memory->map(kIOMapAnywhere|kIOMapReadOnly);
+        if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {''',
+	r'''        IOMemoryMap *source=memory->map(kIOMapAnywhere|kIOMapReadOnly);
+        const uint64_t sourceOffset=gLegacyLogicalW?((uint64_t)gLegacyOffY*sourceStride+(uint64_t)gLegacyOffX*4):0;
+        if(!source || !source->getVirtualAddress() || source->getLength()<allocation+sourceOffset) {''')
+
+patch_backend(
+	r'''        if(!native_legacy_copy_layout(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
+            bootMapping->getLength(),video.v_rowBytes,reinterpret_cast<const void *>(source->getVirtualAddress()),
+            source->getLength(),sourceStride,width,height)) {''',
+	r'''        if(!native_legacy_copy_layout(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
+            bootMapping->getLength(),video.v_rowBytes,reinterpret_cast<const void *>(source->getVirtualAddress()+sourceOffset),
+            source->getLength()-sourceOffset,sourceStride,panelW,panelH)) {''')
+patch_backend(
+	r'''            if(native_legacy_frame_scan(reinterpret_cast<const void *>(source->getVirtualAddress()),source->getLength(),sourceStride,width,height,scan))''',
+	r'''            if(native_legacy_frame_scan(reinterpret_cast<const void *>(source->getVirtualAddress()+sourceOffset),source->getLength()-sourceOffset,sourceStride,panelW,panelH,scan))''')
+patch_backend(
+	r'''            if(native_legacy_frame_colors(reinterpret_cast<const void *>(source->getVirtualAddress()),source->getLength(),sourceStride,width,height,colors,counts,&other))''',
+	r'''            if(native_legacy_frame_colors(reinterpret_cast<const void *>(source->getVirtualAddress()+sourceOffset),source->getLength()-sourceOffset,sourceStride,panelW,panelH,colors,counts,&other))''')
+patch_backend(
+	r'''            uint64_t need=(uint64_t)width*height*4;''',
+	r'''            uint64_t need=(uint64_t)panelW*panelH*4;''')
+patch_backend(
+	r'''                stored=native_legacy_copy_diff(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
+                    bootMapping->getLength(),video.v_rowBytes,reinterpret_cast<const void *>(source->getVirtualAddress()),
+                    source->getLength(),sourceStride,width,height,shadow,shadowValid);''',
+	r'''                stored=native_legacy_copy_diff(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
+                    bootMapping->getLength(),video.v_rowBytes,reinterpret_cast<const void *>(source->getVirtualAddress()+sourceOffset),
+                    source->getLength()-sourceOffset,sourceStride,panelW,panelH,shadow,shadowValid);''')
+patch_backend(
+	r'''            if(!native_legacy_copy_pixels(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
+                bootMapping->getLength(),video.v_rowBytes,reinterpret_cast<const void *>(source->getVirtualAddress()),
+                source->getLength(),sourceStride,width,height)) {''',
+	r'''            if(!native_legacy_copy_pixels(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
+                bootMapping->getLength(),video.v_rowBytes,reinterpret_cast<const void *>(source->getVirtualAddress()+sourceOffset),
+                source->getLength()-sourceOffset,sourceStride,panelW,panelH)) {''')
+
+backend.write_text(backend_text)
+backend_patched_sha = sha(backend)
+try:
+	print(run(['python3', ROOT / 'scripts/build-arm-driver.py', 'NativeLegacyDisplay'], text=True), end='')
+finally:
+	backend.write_bytes(backend_original)
 obj = OUT / 'NativeLegacyDisplay.o'
 require(obj.is_file(), 'The driver recipe did not leave NativeLegacyDisplay.o in build/native-legacy-display')
 

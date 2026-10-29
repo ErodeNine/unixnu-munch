@@ -270,15 +270,29 @@ void panelStage(void *ctx, const char *name, unsigned value, int result) {
 // Map the touch 12-bit raw coordinates onto the 0.1 mm axes the HID layer expects.
 void publish(const struct Fts5652Contact *c, unsigned count) {
     int xs[12], ys[12], ids[12];
+    /* The part reports 0..8639 x 0..19199, which is the 1080x2400 panel in eighths.
+     * The orientation switches exist because the scan direction is not confirmed on this
+     * board: native-touch-swap, -flip-x and -flip-y each cost only a payload rebuild.
+     * offline-legacy-logical=1 matches the display's 1125x2436 presentation: the panel is
+     * centered in it, so a finger moves by the same (+22, +18) the copy crops. */
+    unsigned swap = 0, flipx = 0, flipy = 0, logical = 0;
+    PE_parse_boot_argn("native-touch-swap", &swap, sizeof swap);
+    PE_parse_boot_argn("native-touch-flip-x", &flipx, sizeof flipx);
+    PE_parse_boot_argn("native-touch-flip-y", &flipy, sizeof flipy);
+    PE_parse_boot_argn("offline-legacy-logical", &logical, sizeof logical);
     for (unsigned i = 0; i < count && i < 12; ++i) {
-        /* The decoded coordinate is a 15-bit field (0..32767): the low three bits of each axis
-         * ride in the pressure byte. The part's own range is this board's display-coords from
-         * the device tree, 0..8639 x 0..19199. The HID layer's contract is a different space:
-         * NativeHidInput::touchSend transforms what it receives from 0..30480 / 0..20320 into
-         * the report's 0..32767, so publish in that space rather than in raw panel units, or
-         * every touch lands at a fraction of where the finger was. */
-        long x = (long)c[i].x * FTS5652_HID_AXIS_X / FTS5652_AXIS_X;
-        long y = (long)c[i].y * FTS5652_HID_AXIS_Y / FTS5652_AXIS_Y;
+        long px = (long)c[i].x * 1080 / FTS5652_AXIS_X;
+        long py = (long)c[i].y * 2400 / FTS5652_AXIS_Y;
+        long maxx = 1080, maxy = 2400;
+        if (swap) { const long t = px; px = py; py = t; const long m = maxx; maxx = maxy; maxy = m; }
+        if (flipx) px = maxx - 1 - px;
+        if (flipy) py = maxy - 1 - py;
+        const long lx = logical ? px + 22 : px;
+        const long ly = logical ? py + 18 : py;
+        const long lw = logical ? 1125 : 1080;
+        const long lh = logical ? 2436 : 2400;
+        long x = lx * FTS5652_HID_AXIS_X / lw;
+        long y = ly * FTS5652_HID_AXIS_Y / lh;
         if (x < 0) x = 0; if (x >= FTS5652_HID_AXIS_X) x = FTS5652_HID_AXIS_X - 1;
         if (y < 0) y = 0; if (y >= FTS5652_HID_AXIS_Y) y = FTS5652_HID_AXIS_Y - 1;
         xs[i] = (int)x; ys[i] = (int)y; ids[i] = c[i].id;
@@ -457,6 +471,19 @@ void touchThread(void *arg, wait_result_t) {
             if (n > 0) qcom_usb_debug_write(text, (size_t)n < sizeof(text) ? (size_t)n : sizeof(text) - 1);
         }
         publish(contacts, count);
+        /* native-touch-trace=1 prints one line per frame with a contact, so a known gesture
+         * says which way the panel's axes point without a photograph. Bounded: the loop runs
+         * at the frame rate and the console line is a USB transfer. */
+        static unsigned traced;
+        unsigned trace = 0;
+        PE_parse_boot_argn("native-touch-trace", &trace, sizeof trace);
+        if (trace && count && traced < 400 && &qcom_usb_debug_write) {
+            ++traced;
+            char text[128];
+            int n = snprintf(text, sizeof(text), "TOUCHPT raw=%d,%d mapped=%d,%d n=%u\n",
+                contacts[0].x, contacts[0].y, native_touch_last_x, native_touch_last_y, count);
+            if (n > 0) qcom_usb_debug_write(text, (size_t)n < sizeof(text) ? (size_t)n : sizeof(text) - 1);
+        }
     }
 }
 

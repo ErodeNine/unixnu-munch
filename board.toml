@@ -383,6 +383,12 @@ kernel_args = [
   "offline-legacy-pm=1",
   "offline-legacy-register=1",
   "offline-legacy-gop=1",
+  # Presents the 1080x2400 panel as the iPhone X mode the identity declares (1125x2436,
+  # 375x812 pt at 3x) and copies the centered panel rectangle; see the patch at the top of
+  # scripts/build-gop-legacy-display.py. 1080x2400 at scale 3 is 360x800 pt, which no
+  # iPhone has, and UIKit answers that with the red "No status bar visual provider for
+  # screen" bar. The touch core adds the same (+22, +18) offset from this argument.
+  "offline-legacy-logical=1",
   "offline-legacy-phase=4",
   "offline-legacy-validate=1",
   "offline-legacy-transfer=1",
@@ -441,7 +447,7 @@ kernel_args = [
   "boot-diag-resume=0",
   # Labels the diagnostic page and the live banner ("[mun-b1] ..."), so a photograph
   # names the image it came from. Change it with each tested build.
-  "sheng-build-tag=mun-b3",
+  "sheng-build-tag=mun-b4",
   # qcom-usb-debug=1 starts the CDC-ACM console over the board's DWC3 controller. It tees
   # printf, IOLog, kprintf and the panic drain onto a USB serial port, so the log can be read
   # live on the host instead of photographed off the panel. The firmware already brings the
@@ -469,12 +475,11 @@ kernel_args = [
   # started (TOUCH start=1) and the desktop came up, but nothing reached the system.
   # The reference board passes the same argument.
   "sheng-touch-hid=1",
-  # Publishes the digitizer as its own IOHIDDevice, the way the reference board does. The
-  # combined device has never reached the window server here: reports are attempted (hid
-  # rises), handleReport refuses them (hres=1), and edge still counts real touches. The
-  # driver already implements the split (NativeHidInput.cpp setTouchOnly /
-  # native_hid_touch_allocate); this argument is the only thing that was missing.
-  "sheng-touch-split=1",
+  # sheng-touch-split is not set. It adds a second, touch-only IOHIDDevice next to the
+  # combined one, and with both digitizer services present the window server took the one
+  # that never receives reports: touches reached the event driver (hid rises, edge counts)
+  # and the UI ignored them. With the split off, taps on the home screen open the app under
+  # the finger (measured 2026-10-29).
   # pipa-gpu=<mode>: the A650 probe. Mode 1 only reads -- the GPU's clock sources in the
   # global clock controller and the fuses that say which part this is -- so a wrong address
   # cannot wedge the kernel and the route can be checked before anything is written.
