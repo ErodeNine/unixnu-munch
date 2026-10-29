@@ -117,3 +117,19 @@ kernel.macho 后再执行一次 `./unixnu build kernel`，才会链接真正的 
 参考版 `ButtonsDxe` 读取的是参考机型的按键，K40S 的音量键因此到不了 UniXNU 菜单。
 改用 `xbl_b` 里的板级版本。确认键不受影响：`Menu.c` 同时接受
 `CHAR_CARRIAGE_RETURN` 与 `SCAN_SUSPEND`，板级电源键仍可确认条目。
+
+## 阶段 2：启用显示与触控
+
+2026-10-29 的实机日志显示根文件系统、launchd、keybagd、usermanagerd、datamigrator 均正常，
+而 SpringBoard 每次都在同一 PC 上以 `sig5 ns=2 code=5` 崩溃，`IOMFB_FDR_Loader` 退出码 1：
+用户态没有帧缓冲提供者。
+
+`build-gop-legacy-display.py`、`build-munch-touch.py`、`component:ShengHidInput`
+已回到 archive 列表，`CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y`，触控参数恢复。
+流水线在第一遍内核后把 `kernel.macho` 连同 `.json` 放到
+`build/xnu-prelink/native-owner-mobile-graphics-candidate.macho`，供显示 recipe 使用。
+
+运行时 ABI 观测（`gdb-stop.json`）仍缺失，因此
+`audit-mobile-graphics-legacy.py` 以 `UNIXNU_DISPLAY_ABI_UNQUALIFIED=1` 运行，只跳过这一项检查。
+静态检查（原版 IOMobileGraphicsFamily 代码哈希、构造链、vtable 槽位、抽象槽、类大小 0x18a0）
+仍然生效。

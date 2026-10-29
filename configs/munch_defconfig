@@ -115,7 +115,7 @@ CONFIG_XNU_EXTRA_LD_ARCHIVES="{tree}/build/link-stubs/libLinkStubs.a"
 # that this repository does not ship. package/LinkStubs.c supplies the no-op
 # native_legacy_display_probe() that the patched bsd_init references when this is off, so
 # the kernel links and still draws boot progress and panics on the frame buffer.
-# CONFIG_XNU_NATIVE_LEGACY_DISPLAY is not set
+CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y
 # The A650 kernel GPU driver (drivers/Adreno650, built by scripts/build-adreno650.py) and the
 # board probe that drives it. The archive path uses {tree}: xnu_env() substitutes it, so the
 # value is absolute and satisfies both checks -- unixnu's in scripts/unixnu/kernel.py:145,

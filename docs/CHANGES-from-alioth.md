@@ -131,3 +131,23 @@ The reference `ButtonsDxe` reads the reference board's keys, so the K40S volume
 keys never reach the UniXNU menu. The board copy from `xbl_b` is used instead.
 It is safe for selection: `Menu.c` accepts both `CHAR_CARRIAGE_RETURN` and
 `SCAN_SUSPEND`, so the board power key still confirms an entry.
+
+## Stage 2: display and touch are enabled
+
+The 2026-10-29 hardware log shows the root filesystem, launchd, keybagd,
+usermanagerd and datamigrator running, while SpringBoard traps at the same PC
+(`sig5 ns=2 code=5`) on every launch and `IOMFB_FDR_Loader` exits 1: the
+userspace has no framebuffer provider.
+
+`build-gop-legacy-display.py`, `build-munch-touch.py` and
+`component:ShengHidInput` are back in the archive list,
+`CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y`, and the touch boot arguments are active
+again. The pipeline stages pass 1's `kernel.macho` as
+`build/xnu-prelink/native-owner-mobile-graphics-candidate.macho` (with its
+`.json`) before pass 2, so the display recipe has its reference candidate.
+
+The runtime ABI observation (`gdb-stop.json`) is still not available, so
+`audit-mobile-graphics-legacy.py` runs with `UNIXNU_DISPLAY_ABI_UNQUALIFIED=1`
+and skips only that checkpoint. The static checks — original
+IOMobileGraphicsFamily text hash, constructor chain, vtable slots, abstract
+slots and class size 0x18a0 — remain enforced.

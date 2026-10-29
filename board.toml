@@ -9,11 +9,12 @@ description = "Xiaomi Redmi K40S (munch, 22021211RC)"
 kit = "munch"
 
 [components]
-# ShengHidInput (drivers/ShengHidInput) and GopFramebuffer belong to the display/touch
-# stage: their archives are built by the display recipe, which the first image drops. The
-# driver refuses a selected component with no [kernel] archives entry, so both stay out of
-# include until build-gop-legacy-display.py returns.
-include = ["ArmDTPlatform", "ArmCpu", "SoftwareAES", "ShengUfs", "VirtioMmioBlock", "RamBlock", "XnuPrelink", "DarwinBoot", "AppleKeyStoreState", "QcomXnuUsbDebug"]
+# GopFramebuffer and ShengHidInput are selected again now that the display and touch
+# archives are built: their kernel archives are produced by
+# build-gop-legacy-display.py, which reads the bootstrap candidate staged by the
+# pipeline and archives the HID publisher from build-munch-touch.py and
+# component:ShengHidInput.
+include = ["ArmDTPlatform", "ArmCpu", "SoftwareAES", "ShengUfs", "VirtioMmioBlock", "RamBlock", "GopFramebuffer", "XnuPrelink", "DarwinBoot", "AppleKeyStoreState", "QcomXnuUsbDebug", "ShengHidInput"]
 
 [userdata]
 # Android's userdata on UFS LUN 0, read from the phone's GPT.
@@ -79,15 +80,14 @@ archives = [
   # build-xnu-4k-baseline.sh re-audits the linked storage objects and reads
   # bindings.json next to each archive, including the verified bundle.
   "build-storage-bindings.py --component NativeVirtioBlock --archive libVirtioMmioBlock.a --directory build/virtio-mmio-block-verified-bundle --subset",
-  # The CDC-ACM console over DWC3: the only log channel the first image has besides
-  # the kernel frame buffer drawn by build-boot-progress.py.
+  # The CDC-ACM console over DWC3: the log channel besides the kernel frame buffer.
   "component:QcomXnuUsbDebug",
-  # The display and touch archives are a later stage. They need a qualified bootstrap
-  # candidate (build/xnu-prelink/*candidate.macho) and a recorded runtime ABI observation
-  # that this repository does not ship, so the first image builds without
-  # build-gop-legacy-display.py, build-munch-touch.py, component:ShengHidInput and
-  # build-munch-pcie.py. The kernel still draws boot progress and panics on the frame
-  # buffer through PE_current_console, and logs over USB.
+  # Stage 2 display and touch. build-gop-legacy-display.py rebuilds the original
+  # IOMobileFramebufferLegacy class from the prelinked candidate and archives the HID
+  # publisher that build-munch-touch.py and component:ShengHidInput produced.
+  "build-munch-touch.py",
+  "component:ShengHidInput",
+  "build-gop-legacy-display.py",
 ]
 
 [firmware]
@@ -447,19 +447,19 @@ kernel_args = [
   # H1 probe: does the touch probe's RPMh L11C vote, made concurrently on another core, take
   # the USB PHY rail down? The CDC device leaves the bus at t~5 s, which is when that vote runs.
   # Touch is off for this round only.
-  # "native-touch=1",  # touch archive is a later stage
+  "native-touch=1",
   # The HID half. NativeHidInput only registers the touch sink when this argument is 1
   # (ShengHidInput-*/NativeHidInput.cpp:291,303); without it the frame loop reads contacts and
   # drops them, because publish() finds no sink. Measured 2026-10-28 on boot-usb57: the probe
   # started (TOUCH start=1) and the desktop came up, but nothing reached the system.
   # The reference board passes the same argument.
-  # "sheng-touch-hid=1",
+  "sheng-touch-hid=1",
   # Publishes the digitizer as its own IOHIDDevice, the way the reference board does. The
   # combined device has never reached the window server here: reports are attempted (hid
   # rises), handleReport refuses them (hres=1), and edge still counts real touches. The
   # driver already implements the split (NativeHidInput.cpp setTouchOnly /
   # native_hid_touch_allocate); this argument is the only thing that was missing.
-  # "sheng-touch-split=1",
+  "sheng-touch-split=1",
   # pipa-gpu=<mode>: the A650 probe. Mode 1 only reads -- the GPU's clock sources in the
   # global clock controller and the fuses that say which part this is -- so a wrong address
   # cannot wedge the kernel and the route can be checked before anything is written.
@@ -472,7 +472,7 @@ kernel_args = [
   # native_legacy_display_late_probe, the second of the two start paths the driver adaption
   # guide names. Without this argument the object is linked but never started, which is what
   # every image up to boot-usb73 did: contacts arrived and no report was ever published.
-  # "offline-hid-input=1",  # no HID publisher in the first image
+  "offline-hid-input=1",
   # Screenshot registration. Proven harmless on boot-usb87: the home screen appeared at ~88 s
   # with it enabled, and no capture had even been requested. Kept on so the frame buffer can be
   # read back over the control socket once the USB link is stable.
