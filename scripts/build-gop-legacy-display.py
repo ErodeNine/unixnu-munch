@@ -240,7 +240,7 @@ patch_backend(
         if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {''',
 	r'''        IOMemoryMap *source=memory->map(kIOMapAnywhere|kIOMapReadOnly);
         const uint64_t sourceOffset=gLegacyLogicalW?((uint64_t)gLegacyOffY*sourceStride+(uint64_t)gLegacyOffX*4):0;
-        if(!source || !source->getVirtualAddress() || source->getLength()<allocation+sourceOffset) {''')
+        if(!source || !source->getVirtualAddress() || source->getLength()<allocation) {''')
 
 patch_backend(
 	r'''        if(!native_legacy_copy_layout(reinterpret_cast<volatile void *>(bootMapping->getVirtualAddress()),
@@ -604,6 +604,9 @@ sources = [ROOT / 'drivers/GopFramebuffer/NativeLegacyDisplay.cpp',
     original_candidate_sha256=sha(candidate),
     original_audit_sha256=sha(ROOT / 'build/display-analysis/mobile-graphics-legacy-abi.json'),
     compiled_object_sha256=sha(obj), late_object_sha256=sha(late),
+    # The backend was compiled from a patched copy (offline-legacy-logical); the checkout's
+    # own hash above is the restored file, so record what was actually compiled.
+    backend_patched_sha256=backend_patched_sha,
     probe_object_sha256=sha(probe_obj), presenter_object_sha256=sha(presenter_late),
     archive_sha256=sha(archive),
     bindings={name: hex(value) for name, value in bindings.items()},

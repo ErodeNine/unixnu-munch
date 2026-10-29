@@ -287,10 +287,10 @@ void publish(const struct Fts5652Contact *c, unsigned count) {
         if (swap) { const long t = px; px = py; py = t; const long m = maxx; maxx = maxy; maxy = m; }
         if (flipx) px = maxx - 1 - px;
         if (flipy) py = maxy - 1 - py;
-        const long lx = logical ? px + 22 : px;
-        const long ly = logical ? py + 18 : py;
-        const long lw = logical ? 1125 : 1080;
-        const long lh = logical ? 2436 : 2400;
+        const long lx = logical ? px + (swap ? 18 : 22) : px;
+        const long ly = logical ? py + (swap ? 22 : 18) : py;
+        const long lw = logical ? (swap ? 2436 : 1125) : (swap ? 2400 : 1080);
+        const long lh = logical ? (swap ? 1125 : 2436) : (swap ? 1080 : 2400);
         long x = lx * FTS5652_HID_AXIS_X / lw;
         long y = ly * FTS5652_HID_AXIS_Y / lh;
         if (x < 0) x = 0; if (x >= FTS5652_HID_AXIS_X) x = FTS5652_HID_AXIS_X - 1;
