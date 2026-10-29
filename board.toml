@@ -135,8 +135,13 @@ volume = "MUNCHESP"
 size_mib = 176
 loader = "firmware"
 title = "Boot"
-# The board's DRAM from 0x80000000 to the end of the last bank.
-dram_size = "0x300000000"
+# The board's DRAM from 0x80000000 to the end of the last bank. 8 GiB: the
+# value the archived munch port booted on hardware and the shape the ADT
+# handoff and the payload packer both accept without qualification. A 12 GiB
+# handover needs one contiguous range, so it would have to claim the 69 MiB
+# firmware hole at 0xbbb00000..0xc0000000; drop back to 8 GiB until that is
+# measured on hardware.
+dram_size = "0x200000000"
 skip_setup_tool = "scripts/seed-data-skip-setup.py"
 # The accepted trust cache bundle. Without one, DarwinBoot writes no
 # /chosen/memory-map/TrustCache, load_static_trust_cache() finds a zero-length segment,
