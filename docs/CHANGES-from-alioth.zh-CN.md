@@ -102,3 +102,12 @@ Reset、RTC、Capsule、MonotonicCounter 都没有加载，`CoreAllEfiServicesAv
 `munchPkg/Library/MemoryMapLib` 现在把 `DXE Heap` 映射为
 `0x93000000 + 0x09000000`（144 MiB），位于 ADSP RPC 保留区与 Display Reserved 之间；
 启动镜像把内核放在 0x10008000、ramdisk 放在 0x26000000，均不冲突。
+
+## 内核步骤要跑两遍
+
+`build-platform-power.py` 需要上一次的预链接内核作为参考
+（`out/<device>/<os>/<config>/kernel/kernel.macho`）。全新 workspace 没有这个文件，
+它会归档一个**空的 `sheng_pmgr_run`**，内核因此不会发布 ApplePMGR 节点，AMFI 打印
+`AMFI: No PMGR?`（`ConfigurationSettings.cpp:235`）后启动停住。在第一遍产出
+kernel.macho 后再执行一次 `./unixnu build kernel`，才会链接真正的 PMGR 桥。
+流水线与 `scripts/build-local.sh` 都已改为两遍。

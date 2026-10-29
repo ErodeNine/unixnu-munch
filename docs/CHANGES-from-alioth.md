@@ -113,3 +113,14 @@ asserts (`ASSERT [DxeCore] DxeMain.c:581`).
 (144 MiB) instead of `0x98900000 + 0x03300000`. The window sits between the
 ADSP RPC reservation and Display Reserved; the boot image places the kernel at
 0x10008000 and the ramdisk at 0x26000000, so nothing overlaps.
+
+## The kernel step runs twice
+
+`build-platform-power.py` needs the previous prelinked kernel as its reference
+(`out/<device>/<os>/<config>/kernel/kernel.macho`). A fresh workspace has none,
+so it archives a **no-op `sheng_pmgr_run`** and the kernel boots without the
+ApplePMGR nub; AMFI then prints `AMFI: No PMGR?` at
+`ConfigurationSettings.cpp:235` and the boot stops. Running `./unixnu build
+kernel` a second time — after the first pass produced kernel.macho — links the
+real bridge from the same kernelcache. Both the pipeline and
+`scripts/build-local.sh` now do two passes.
