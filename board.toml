@@ -399,7 +399,12 @@ kernel_args = [
   "offline-legacy-transfer=1",
   "offline-legacy-cpu-present=1",
   "offline-legacy-verdict=1",
-  "offline-legacy-reached=1",
+  # Off for build-6. It paints colour bands into the same frame buffer that the renderer
+  # scans out, and it does so from the display backend's own swap path, so every frame a client
+  # submits also repaints the band. The bands did their job: build-5 reached the desktop, so the
+  # probe chain and the userspace ladder are both proven and the bands are now only a flicker
+  # source. Turn them back on to bisect a regression.
+  # "offline-legacy-reached=1",
   # offline-legacy-dump-at is gone. It gated native_legacy_dump_state(), which was removed when
   # the cell painter replaced the panic dump, so the argument had been a dead key: present on the
   # command line, read by nothing. The text channel below replaces it properly.
@@ -443,7 +448,14 @@ kernel_args = [
   # BootProgress.c stores and renders those records. That is the pid, the name and the reason,
   # which is exactly what the exit loop investigation is missing.
   # 1 would be a one-shot page; 2 keeps it live. Any other value disables the layer.
-  "boot-progress=2",
+  # Off for build-6. The page is a 48-row text grid that the monitor thread repaints every
+  # second, and boot_progress_prepare_scanout() -- the only path that hands the panel back to
+  # the renderer -- has no caller anywhere in this tree, so display.bound stays 1 and the grid
+  # keeps overwriting SpringBoard's frame. Combined with a CPU copy into scanout and no vblank
+  # interrupt, the desktop flickers. Measured on build-5: the home screen rendered and the page
+  # was still painting over its lower left corner. The USB CDC console carries the diagnostics,
+  # so the panel goes to the renderer for good.
+  # "boot-progress=2",
   # boot-diag-resume=<seconds> lets the diagnostic page take the panel back that long after
   # scanout stops. Measured 2026-10-27 on boot-usb33: SpringBoard reached the lock screen, but
   # this page took the panel back every time the renderer paused for ten seconds, so the desktop
@@ -452,7 +464,7 @@ kernel_args = [
   "boot-diag-resume=0",
   # Labels the diagnostic page and the live banner ("[mun-b1] ..."), so a photograph
   # names the image it came from. Change it with each tested build.
-  "sheng-build-tag=mun-fix1",
+  "sheng-build-tag=mun-fix2",
   # qcom-usb-debug=1 starts the CDC-ACM console over the board's DWC3 controller. It tees
   # printf, IOLog, kprintf and the panic drain onto a USB serial port, so the log can be read
   # live on the host instead of photographed off the panel. The firmware already brings the
