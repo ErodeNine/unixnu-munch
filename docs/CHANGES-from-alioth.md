@@ -100,3 +100,16 @@ key and verifies the RSA signature and every 4096-byte block:
 transport, and the config chain (`VERIFIED_ROOT_PROBE`, `OWNER_ROOT_AUDIT/TRUST`,
 `NATIVE_VIRTIO_BLOCK`, the owner cache/boot-manifest/union/Data mounts) is on again.
 Display and touch remain stage 2.
+
+## DXE heap enlarged to 144 MiB
+
+With the K40S PmicDxe in place the firmware dispatches the whole munch DXE set
+and the reference 48 MiB heap runs out (`AllocatePoolPages: fail to allocate`).
+SecurityStub, Runtime, Variable, Reset, RTC, Capsule and MonotonicCounter then
+never load, `CoreAllEfiServicesAvailable()` returns EFI_NOT_FOUND and DxeMain
+asserts (`ASSERT [DxeCore] DxeMain.c:581`).
+
+`munchPkg/Library/MemoryMapLib` now maps `DXE Heap 0x93000000 + 0x09000000`
+(144 MiB) instead of `0x98900000 + 0x03300000`. The window sits between the
+ADSP RPC reservation and Display Reserved; the boot image places the kernel at
+0x10008000 and the ramdisk at 0x26000000, so nothing overlaps.

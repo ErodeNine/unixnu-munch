@@ -91,3 +91,14 @@
 `board.toml` 随后构建 VerifiedRoot bundle 与多策略块传输，配置链
 （`VERIFIED_ROOT_PROBE`、`OWNER_ROOT_AUDIT/TRUST`、`NATIVE_VIRTIO_BLOCK`、
 owner cache/boot-manifest/union/Data 挂载）恢复开启；显示与触控仍属阶段 2。
+
+## DXE 堆扩大到 144 MiB
+
+换上 K40S 自己的 PmicDxe 后，固件会派发整套 munch DXE，参考配置的 48 MiB 堆不够用
+（`AllocatePoolPages: fail to allocate`）。随后 SecurityStub、Runtime、Variable、
+Reset、RTC、Capsule、MonotonicCounter 都没有加载，`CoreAllEfiServicesAvailable()`
+返回 EFI_NOT_FOUND，DxeMain 断言（`ASSERT [DxeCore] DxeMain.c:581`）。
+
+`munchPkg/Library/MemoryMapLib` 现在把 `DXE Heap` 映射为
+`0x93000000 + 0x09000000`（144 MiB），位于 ADSP RPC 保留区与 Display Reserved 之间；
+启动镜像把内核放在 0x10008000、ramdisk 放在 0x26000000，均不冲突。
