@@ -79,3 +79,16 @@ __attribute__((weak)) uint32_t native_ufs_dpu_map(unsigned slot, const uint64_t 
 	(void)count;
 	return 0;
 }
+// The display late probe calls these board hooks unconditionally. The PCIe init
+// (build-munch-pcie.py) and the A650 probe (build-adreno650.py) are not part of the
+// first display image, and a static kernel link does not leave even weak references
+// undefined. Weak definitions: the real archives win as soon as they are built.
+__attribute__((weak)) void munch_pcie_init(void);
+__attribute__((weak)) void munch_pcie_init(void)
+{
+}
+
+__attribute__((weak)) void native_gpu_probe(void);
+__attribute__((weak)) void native_gpu_probe(void)
+{
+}
