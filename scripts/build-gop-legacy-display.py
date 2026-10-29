@@ -328,8 +328,8 @@ while i < len(arguments):
 	elif not value.startswith(('-W', '-DXNU_BOOT_PROGRESS=')):
 		command.append(value)
 	i += 1
-command += ['-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter',
-            '-Wno-unnecessary-virtual-specifier', '-Wno-c99-designator', '-Wno-reorder-init-list',
+command += ['-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror', '-Wno-unknown-warning-option', '-Wno-unused-parameter',
+            '-Wno-c99-designator', '-Wno-reorder-init-list',
             '-Wno-deprecated-enum-enum-conversion',
             # `-I .` in the replayed recipe means the recorded object directory, so it resolves
             # meta_features.h only while the compiler runs there. Name the directory explicitly
@@ -396,7 +396,7 @@ while i < len(arguments):
     elif not value.startswith(('-W', '-DXNU_BOOT_PROGRESS=')):
         cpufreq_command.append(value)
     i += 1
-cpufreq_command += ['-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter',
+cpufreq_command += ['-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror', '-Wno-unknown-warning-option', '-Wno-unused-parameter',
                     '-Wno-c99-designator', '-Wno-reorder-init-list',
                     '-Wno-deprecated-enum-enum-conversion', '-Wno-missing-designated-field-initializers',
                     '-I', str(record['directory']), '-I', str(ROOT / '.cache/xnu-work/osfmk'), '-I', str(OUT)]

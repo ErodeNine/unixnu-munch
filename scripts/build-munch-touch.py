@@ -113,8 +113,8 @@ def cpp_cmd(source, obj, json_path, extra_inc=None):
     # loop above drops every -W, and XNU's headers (vm_kern.h, IOLib.h, OSValueObject.h) trip it
     # under -Werror on this toolchain. Measured 2026-10-27: it is the only diagnostic that
     # blocks the kit build, and it fires in Apple's headers, not in the kit's code.
-    cmd += ["-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
-            "-Wno-unnecessary-virtual-specifier", "-Wno-c99-designator", "-Wno-reorder-init-list",
+    cmd += ["-Wall", "-Wextra", "-Werror", "-Wno-unknown-warning-option", "-Wno-unused-parameter",
+            "-Wno-c99-designator", "-Wno-reorder-init-list",
             "-Wno-deprecated-enum-enum-conversion", "-Wno-missing-designated-field-initializers",
             "-I", str(ROOT / ".cache/xnu-work/osfmk")]
     if extra_inc:

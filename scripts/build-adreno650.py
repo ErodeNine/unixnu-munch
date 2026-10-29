@@ -62,13 +62,13 @@ for source in sources:
         i += 1
     command += ['-I', str(ROOT / 'kits/AdrenoPM4'), '-I', str(ROOT / 'kits/ArmSmmu4K'), '-I', str(ROOT / 'kits/AdrenoFirmware'),
                 '-I', str(KITS / 'pipa'), '-I', str(KITS / 'AdrenoFirmware'), '-I', str(KITS / 'AdrenoPM4'), '-I', str(KITS / 'ArmSmmu4K'), '-I', str(ROOT / '.cache/xnu-work/osfmk'),
-                '-I', str(driver), '-I', str(PACKAGE), '-Wall', '-Wextra', '-Werror',
+                '-I', str(driver), '-I', str(PACKAGE), '-Wall', '-Wextra', '-Werror', '-Wno-unknown-warning-option',
                 '-Wno-unused-parameter', '-Wno-incompatible-sysroot', '-Wno-c99-designator',
                 # munch_pcie.c leaves struct fields implicit on purpose (the ios-sweet tree
                 # compiled it without -Werror); the kernel's record turns that into an error.
                 '-Wno-missing-field-initializers',
                 '-Wno-reorder-init-list', '-Wno-deprecated-enum-enum-conversion',
-                '-Wno-unnecessary-virtual-specifier']
+                ]
     result = subprocess.run(command, cwd=recipe['directory'], capture_output=True, text=True)
     if result.returncode:
         sys.exit(str(source) + ':\n' + result.stderr[-2500:])
