@@ -467,6 +467,7 @@ while i < len(arguments):
 command += ['-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror', '-Wno-unknown-warning-option', '-Wno-unused-parameter',
             '-Wno-c99-designator', '-Wno-reorder-init-list',
             '-Wno-deprecated-enum-enum-conversion',
+            '-Wno-unnecessary-virtual-specifier', '-Wno-missing-designated-field-initializers',
             # `-I .` in the replayed recipe means the recorded object directory, so it resolves
             # meta_features.h only while the compiler runs there. Name the directory explicitly
             # as well, so the include does not depend on the working directory alone.
@@ -535,6 +536,7 @@ while i < len(arguments):
 cpufreq_command += ['-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror', '-Wno-unknown-warning-option', '-Wno-unused-parameter',
                     '-Wno-c99-designator', '-Wno-reorder-init-list',
                     '-Wno-deprecated-enum-enum-conversion', '-Wno-missing-designated-field-initializers',
+                    '-Wno-unnecessary-virtual-specifier',
                     '-I', str(record['directory']), '-I', str(ROOT / '.cache/xnu-work/osfmk'), '-I', str(OUT)]
 cpufreq_command += suppressions2
 run(cpufreq_command, cwd=record['directory'])

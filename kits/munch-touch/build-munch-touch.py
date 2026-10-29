@@ -89,7 +89,8 @@ def cpp_cmd(source, obj, json_path, extra_inc=None):
         i += 1
     cmd += ["-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
             "-Wno-unnecessary-virtual-specifier", "-Wno-c99-designator", "-Wno-reorder-init-list",
-            "-Wno-deprecated-enum-enum-conversion", "-I", str(ROOT / ".cache/xnu-work/osfmk")]
+            "-Wno-deprecated-enum-enum-conversion", "-Wno-missing-designated-field-initializers",
+            "-I", str(ROOT / ".cache/xnu-work/osfmk")]
     if extra_inc:
         cmd += ["-I" + str(p) for p in extra_inc]
     return cmd, r["directory"]
