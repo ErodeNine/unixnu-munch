@@ -16,7 +16,9 @@
 // do exactly this; the only board-specific parts here are the boot argument and the provider.
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
+#include <libkern/c++/OSBoolean.h>
 #include <libkern/c++/OSDictionary.h>
+#include <libkern/c++/OSIterator.h>
 #include <libkern/c++/OSKext.h>
 #include <libkern/c++/OSMetaClass.h>
 #include <libkern/c++/OSSymbol.h>
@@ -43,10 +45,60 @@ volatile uint32_t native_hid_touch_status;
 // The publisher's tick asks whether it should run. The touch core feeds it directly through
 // the sink, so nothing has to poll: answer yes once the board has asked for the digitizer.
 volatile uint32_t native_hid_input_command;
+// 0 nothing published, 1 the event service carries the digitizer keys, 2 its provider does too.
+volatile uint32_t native_hid_props_status;
 }
 
 bool native_hid_input_requested(void) {
   return true;
+}
+
+// The IOHIDEventDriver that attached below this device, if any. It registers asynchronously
+// after the device starts, so it is looked up on every tick instead of once.
+static IORegistryEntry *hidEventDriver(IORegistryEntry *parent, unsigned depth) {
+  if (!depth) return nullptr;
+  OSIterator *it = parent->getChildIterator(gIOServicePlane);
+  if (!it) return nullptr;
+  IORegistryEntry *found = nullptr;
+  while (OSObject *child = it->getNextObject()) {
+    IORegistryEntry *entry = OSDynamicCast(IORegistryEntry, child);
+    if (!entry) continue;
+    if (entry->metaCast("IOHIDEventDriver")) { found = entry; break; }
+    if ((found = hidEventDriver(entry, depth - 1))) break;
+  }
+  it->release();
+  return found;
+}
+
+// ShengHidInput's timer calls this once a second with each device. backboardd classifies a
+// digitizer by the properties of the IOHIDEventDriver service it opens, not by the IOHIDDevice
+// below it, and it drops a digitizer event whose sending service does not carry
+// PrimaryUsagePage 0x0D with PrimaryUsage 1, 4 or 0x20 or the Built-In flag. The descriptor's
+// own classification is not enough: setting these on the device would change driver matching,
+// which depends on the descriptor layout, so they are published on the matched services
+// instead, exactly as the reference board does. OfflineDigitizerProperties marks our own
+// publication so this runs once per service rather than on every tick: a repeated setProperty
+// keeps backboardd re-evaluating the service.
+extern "C" void native_hid_live_checkpoint(IOService *device) {
+  if (!device || !device->getProperty("Built-In")) return;
+  IORegistryEntry *driver = hidEventDriver(device, 4);
+  if (!driver || driver->getProperty("OfflineDigitizerProperties")) return;
+  driver->setProperty("OfflineDigitizerProperties", kOSBooleanTrue);
+  driver->setProperty("Built-In", kOSBooleanTrue);
+  driver->setProperty("DisplayIntegrated", kOSBooleanTrue);
+  driver->setProperty("PrimaryUsagePage", (unsigned long long)0x0d, 32);
+  driver->setProperty("PrimaryUsage", (unsigned long long)4, 32);
+  native_hid_props_status = 1;
+  // backboardd's digitizer filter is {DeviceUsagePage, DeviceUsage, Built-In}, and the event
+  // service's provider is the interface those are read from on some paths. Both levels get
+  // the keys, as on the reference board.
+  if (IORegistryEntry *interface = driver->getParentEntry(gIOServicePlane)) {
+    interface->setProperty("Built-In", kOSBooleanTrue);
+    interface->setProperty("DisplayIntegrated", kOSBooleanTrue);
+    interface->setProperty("PrimaryUsagePage", (unsigned long long)0x0d, 32);
+    interface->setProperty("PrimaryUsage", (unsigned long long)4, 32);
+    native_hid_props_status = 2;
+  }
 }
 
 // Runs once, from native_legacy_display_late_probe, after the display and the touch core are up.

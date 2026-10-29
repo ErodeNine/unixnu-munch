@@ -211,8 +211,12 @@ __attribute__((weak)) uint64_t native_dpu_stats[20];
 __attribute__((weak)) uint64_t native_gop_wait_stats[7];
 __attribute__((weak)) uint64_t native_gpu_coherence_row[120];
 __attribute__((weak)) uint64_t native_gpu_perf_vote[2];
-__attribute__((weak)) uint64_t native_hid_input_events[8];
-__attribute__((weak)) uint64_t native_hid_input_results[8];
+/* The types must match ShengHidInput's own definition and BootProgress.c's declarations.
+ * They were uint64_t here while every reader used 32-bit elements, so every index above 0
+ * read the neighbouring slot: the page's report count was really event 3, and TOUCHSTAT's
+ * hres was event 3's result, not handleReport's. */
+__attribute__((weak)) uint32_t native_hid_input_events[8];
+__attribute__((weak)) int native_hid_input_results[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 /* ShengHidInput's NativeHidInput.cpp calls these three, which the reference board defines in
  * its own package. Without them the kernel link fails the moment the object is actually
  * pulled in, which is what happened the first time it was archived into the force-loaded late
@@ -222,7 +226,7 @@ __attribute__((weak)) uint64_t native_hid_input_results[8];
 __attribute__((weak)) void native_hid_input_observed(unsigned code, int value) {
   if (code < 8) {
     native_hid_input_events[code] = native_hid_input_events[code] + 1;
-    native_hid_input_results[code] = (uint64_t)(int64_t)value;
+    native_hid_input_results[code] = value;
   }
 }
 __attribute__((weak)) void native_hid_live_checkpoint(void *service) { (void) service; }
