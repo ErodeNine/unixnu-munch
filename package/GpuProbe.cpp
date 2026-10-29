@@ -352,23 +352,22 @@ void gmuColdStart(const gpb_result &r, const gpb_gmu_clock_on &o) {
         vm_offset_t ml = ml_io_map_unmappable(0x3da0000, 0x10000, 7);
         if (ml) {
             volatile uint32_t *m = reinterpret_cast<volatile uint32_t *>(ml);
+            const uint32_t ml_was = m[0x800 / 4 + 5];
             ml_wrote = 0x8000007fu;
             m[0x800 / 4 + 5] = ml_wrote;
             __asm__ volatile("dsb sy" ::: "memory");
             ml_got = m[0x800 / 4 + 5];
-            m[0x800 / 4 + 5] = 0;
+            m[0x800 / 4 + 5] = ml_was;
             __asm__ volatile("dsb sy" ::: "memory");
             ml_io_unmap(ml, 0x10000);
         }
         snprintf(native_gpu_rows[kRowLoad], cap, "PRE acr %08x smr5 %08x->%08x ml %08x->%08x apps5 %08x",
                  acr, probe_val, got, ml_wrote, ml_got, apps_wrote);
-        // Those two slots hold a live S2CR with no SMR match -- an inconsistent state left by
-        // whatever ran before this probe. With SMR zero they route nothing, so releasing them
-        // takes nothing away, and it is what makes the kit's write land instead of returning
-        // kIOReturnNotPermitted.
-        if (s[0x800 / 4 + 2] == 0 && s[0xc00 / 4 + 2]) s[0xc00 / 4 + 2] = 0;
-        if (s[0x800 / 4 + 3] == 0 && s[0xc00 / 4 + 3]) s[0xc00 / 4 + 3] = 0;
-        __asm__ volatile("dsb sy" ::: "memory");
+        // The two target slots are left alone. The kit used to require an unused S2CR to read
+        // exactly FAULT and this block cleared the CBNDX those slots carry, but the pipa kit
+        // this repository now uses treats any FAULT-typed S2CR as free (the same part reads
+        // 0x000203ff on the tablet), and clearing them would write type 0, which the kit then
+        // refuses as busy. Nothing here is written outside the probes' own restore.
     }
     NativeAdrenoGmuContextReport &g = native_gpu_gmu_context;
     const IOReturn status = NativeAdrenoGmuContextBringupRoutes(reinterpret_cast<volatile uint8_t *>(gSmmuMap->getVirtualAddress()),
