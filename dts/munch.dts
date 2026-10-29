@@ -18,7 +18,7 @@
     memory@80000000 {
         device_type = "memory";
         // The 8 GiB model: one bank from 0x80000000.
-        reg = <0 0x80000000 0x2 0x00000000>;
+        reg = <0 0x80000000 0x0 0x3bb00000>, <0 0xc0000000 0x2 0xc0000000>;
     };
 
     reserved-memory {
