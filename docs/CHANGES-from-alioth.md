@@ -124,3 +124,10 @@ ApplePMGR nub; AMFI then prints `AMFI: No PMGR?` at
 kernel` a second time — after the first pass produced kernel.macho — links the
 real bridge from the same kernelcache. Both the pipeline and
 `scripts/build-local.sh` now do two passes.
+
+## ButtonsDxe comes from the board
+
+The reference `ButtonsDxe` reads the reference board's keys, so the K40S volume
+keys never reach the UniXNU menu. The board copy from `xbl_b` is used instead.
+It is safe for selection: `Menu.c` accepts both `CHAR_CARRIAGE_RETURN` and
+`SCAN_SUSPEND`, so the board power key still confirms an entry.

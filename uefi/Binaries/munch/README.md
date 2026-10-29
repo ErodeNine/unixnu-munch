@@ -21,9 +21,7 @@ reference set.
 | TsensDxe | thermal sensor map | `QcomPkg/Drivers/TsensDxe/TsensDxe.efi` |
 | LimitsDxe | board current/voltage limits | `QcomPkg/Drivers/LimitsDxe/LimitsDxe.efi` |
 | ArmCpuDxe | reference driver looks for an unknown "CPU Vectors" region and asserts in the exception handler | `ArmPkg/Drivers/CpuDxe/CpuDxe.efi` |
-
-`ButtonsDxe` is deliberately **not** replaced: the reference copy carries the
-Mu-Silicium patch that maps the power key to ENTER for the UniXNU menu.
+| ButtonsDxe | volume keys do not reach the UniXNU menu: the reference build reads different GPIOs | `QcomPkg/Drivers/ButtonsDxe/ButtonsDxe.efi` |
 
 ## Adding another driver
 

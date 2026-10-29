@@ -111,3 +111,9 @@ Reset、RTC、Capsule、MonotonicCounter 都没有加载，`CoreAllEfiServicesAv
 `AMFI: No PMGR?`（`ConfigurationSettings.cpp:235`）后启动停住。在第一遍产出
 kernel.macho 后再执行一次 `./unixnu build kernel`，才会链接真正的 PMGR 桥。
 流水线与 `scripts/build-local.sh` 都已改为两遍。
+
+## ButtonsDxe 换用板级版本
+
+参考版 `ButtonsDxe` 读取的是参考机型的按键，K40S 的音量键因此到不了 UniXNU 菜单。
+改用 `xbl_b` 里的板级版本。确认键不受影响：`Menu.c` 同时接受
+`CHAR_CARRIAGE_RETURN` 与 `SCAN_SUSPEND`，板级电源键仍可确认条目。
