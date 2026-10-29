@@ -4,37 +4,28 @@ Files here replace the same path under `Binaries/munch/` in the Mu-Silicium
 checkout after the SM8250 reference set (alioth) is copied in. `uefi/apply.sh`
 merges this tree last.
 
-The first file that needs replacing is the PMIC driver: on the K40S the
-reference `PmicDxeLa.efi` fails right after it is dispatched and the platform
-resets with
+Everything below was extracted from this phone's own `xbl_b`
+(`partitions-20261025` backup): the main DXE volume is a gzip guided section
+(`1d301fe9-be79-4353-91c2-d23bc959ae0c`); each FFS file is a DXE_DRIVER whose
+PE32 and DXEPEX sections are copied verbatim. The `.inf` wrappers stay from the
+reference set.
 
-```
-ERROR: C900000002:V03000007 IO 5776232E-082D-4B75-9A0E-FE1D13F7A5D9
-```
+| Driver | Reference problem on the K40S | File |
+| --- | --- | --- |
+| PmicDxe | OEM error right after dispatch, platform reset (`ERROR: C900000002… IO 5776232E…`) | `QcomPkg/Drivers/PmicDxe/PmicDxeLa.efi` |
+| SPMIDxe | data abort (translation fault, level 3) inside SPMI when the board PmicDxe calls it | `QcomPkg/Drivers/SPMIDxe/SPMIDxe.efi` |
+| QcomChargerDxe | calls PmicDxe and hits the same SPMI path; board charges at 67 W | `QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.efi` |
+| ChargerExDxe | paired with the charger driver | `QcomPkg/Drivers/ChargerExDxe/ChargerExDxe.efi` |
+| UsbPwrCtrlDxe | VBUS/role control on the board PMIC | `QcomPkg/Drivers/UsbPwrCtrlDxe/UsbPwrCtrlDxe.efi` |
+| AdcDxe | PMIC ADC channels differ per board | `QcomPkg/Drivers/AdcDxe/AdcDxe.efi` |
+| TsensDxe | thermal sensor map | `QcomPkg/Drivers/TsensDxe/TsensDxe.efi` |
+| LimitsDxe | board current/voltage limits | `QcomPkg/Drivers/LimitsDxe/LimitsDxe.efi` |
+| ArmCpuDxe | reference driver looks for an unknown "CPU Vectors" region and asserts in the exception handler | `ArmPkg/Drivers/CpuDxe/CpuDxe.efi` |
 
-`5776232E-082D-4B75-9A0E-FE1D13F7A5D9` is the `FILE_GUID` of
-`QcomPkg/Drivers/PmicDxe/PmicDxeLa.inf`. Extract the driver from the K40S's own
-XBL and drop it here at the matching path:
+`ButtonsDxe` is deliberately **not** replaced: the reference copy carries the
+Mu-Silicium patch that maps the power key to ENTER for the UniXNU menu.
 
-```
-Binaries/munch/QcomPkg/Drivers/PmicDxe/PmicDxeLa.efi
-Binaries/munch/QcomPkg/Drivers/PmicDxe/PmicDxeLa.depex   (if the dump has one)
-```
+## Adding another driver
 
-Keep the `.inf` from the reference set; only the PE32 and its dependency file
-change. The same layout accepts every other driver extracted from the K40S
-firmware, so a full vendor set can be assembled here without touching the
-upstream tree.
-
-How to extract (Windows, from the stock `xbl` partition or `images/xbl.elf` of
-the fastboot ROM):
-
-1. `adb shell su -c 'dd if=/dev/block/by-name/xbl_a of=/sdcard/xbl.img'`
-   `adb pull /sdcard/xbl.img` — or extract `images/xbl.elf` from the ROM.
-2. Download UEFIExtract (UEFITool NE releases) and run
-   `UEFIExtract.exe xbl.img`
-3. Open the produced `xbl.img.dump/` tree and find the folder named
-   `5776232E-082D-4B75-9A0E-FE1D13F7A5D9`.
-4. Inside it, the PE32 image section is the driver body; save it as
-   `PmicDxeLa.efi` under the path above.
-5. Commit it and push, then rebuild the firmware.
+Same layout: `Binaries/munch/<Package>/Drivers/<Name>/<Alias>.efi` with the file
+name the reference `.inf` expects (`DXE_DEPEX|…depex`, `PE32|…efi`).
