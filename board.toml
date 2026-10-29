@@ -432,6 +432,9 @@ kernel_args = [
   # appeared and vanished in alternation. The console carries the diagnostics now, so the page
   # no longer has to hold the panel: 0 leaves it to the renderer for good.
   "boot-diag-resume=0",
+  # Labels the diagnostic page and the live banner ("[mun-b1] ..."), so a photograph
+  # names the image it came from. Change it with each tested build.
+  "sheng-build-tag=mun-b1",
   # qcom-usb-debug=1 starts the CDC-ACM console over the board's DWC3 controller. It tees
   # printf, IOLog, kprintf and the panic drain onto a USB serial port, so the log can be read
   # live on the host instead of photographed off the panel. The firmware already brings the
