@@ -430,13 +430,19 @@ void touchThread(void *arg, wait_result_t) {
         frames = frames + 1;
         if (frames % TB_REG_POLL_FRAMES == 0) touchHealthCheck(s);
         /* The part raises its interrupt line while it holds a report: the reference driver for
-         * this SoC family states it as "low = the chip has a report" and looks at the line
-         * rather than reading the frame register on a timer. Reading on a blind timer is what
-         * this loop used to do, and boot-usb64 saw one report in nine hundred seconds of
-         * polling while the user touched repeatedly. Read the line first and only fetch a frame
-         * when the part says it has one. */
+         * this SoC family states it as "low = the chip has a report". This loop used to skip
+         * the frame read whenever the line was high, and boot-usb64 saw one report in nine
+         * hundred seconds of polling while the user touched repeatedly.
+         *
+         * The skip is gone. Measured on build-6 (boot-test-diag, 2026-10-29): a loop that only
+         * reads the line and sleeps ran at 2.6 Hz, because a thread with no work leaves the CPU
+         * idle and the 6 ms sleep becomes 385 ms; the same loop with a finger down ran at
+         * 42.6 Hz. Skipping the read therefore made the loop slower, not cheaper: at 2.6 Hz the
+         * "one frame in fifty" fallback sampled the panel once every 19 s, so a 200 ms tap never
+         * produced a contact and SpringBoard never saw a press. Reading every frame is both
+         * faster and the only thing that keeps the thread busy enough for IOSleep(6) to mean
+         * 6 ms. That sleep bounds the bus at ~166 Hz, so there is no overrun to guard against. */
         native_touch_irq_level = (unsigned)gpioRead(s, TB_GPIO_IRQ);
-        if (native_touch_irq_level != 0 && (frames % 50) != 0) { continue; }
         if (native_touch_irq_level == 0) native_touch_irq_low = native_touch_irq_low + 1;
         native_touch_loop_step = 1;
         unsigned count = 0;

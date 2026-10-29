@@ -448,14 +448,20 @@ kernel_args = [
   # BootProgress.c stores and renders those records. That is the pid, the name and the reason,
   # which is exactly what the exit loop investigation is missing.
   # 1 would be a one-shot page; 2 keeps it live. Any other value disables the layer.
-  # Off for build-6. The page is a 48-row text grid that the monitor thread repaints every
-  # second, and boot_progress_prepare_scanout() -- the only path that hands the panel back to
-  # the renderer -- has no caller anywhere in this tree, so display.bound stays 1 and the grid
-  # keeps overwriting SpringBoard's frame. Combined with a CPU copy into scanout and no vblank
-  # interrupt, the desktop flickers. Measured on build-5: the home screen rendered and the page
-  # was still painting over its lower left corner. The USB CDC console carries the diagnostics,
-  # so the panel goes to the renderer for good.
-  # "boot-progress=2",
+  # Off for build-6, back on for build-7. build-6 turned it off to stop the flicker and the
+  # flicker did stop, but so did EXITLOG, UFSTIME and TOUCHSTAT: all three are printed from
+  # this layer (BootProgress.c:735, :1329, :1395) behind `if(!enabled)return;`, so the console
+  # went silent at the exact point the investigation needed it. build-6 then looked hung for a
+  # day when it was running normally -- build-test-diag (the same image with only this argument
+  # added) rendered the desktop and logged 288 xpcproxy exits.
+  # The flicker was not this page. It was offline-legacy-reached, which repaints a colour band
+  # from inside the backend's own swap and transfer hooks -- once per submitted frame -- and
+  # those writes land in the same scanout buffer the compositor is reading. With that argument
+  # off and this one on, build-test-diag held a steady desktop for 1840 s. boot_progress_
+  # prepare_scanout() is not callerless either: LegacyDisplayProbe.cpp:138 hands the panel over
+  # through native_legacy_prepare_scanout(), so display.bound does reach 0 and the page yields
+  # to the renderer instead of overwriting it.
+  "boot-progress=2",
   # boot-diag-resume=<seconds> lets the diagnostic page take the panel back that long after
   # scanout stops. Measured 2026-10-27 on boot-usb33: SpringBoard reached the lock screen, but
   # this page took the panel back every time the renderer paused for ten seconds, so the desktop
@@ -464,7 +470,7 @@ kernel_args = [
   "boot-diag-resume=0",
   # Labels the diagnostic page and the live banner ("[mun-b1] ..."), so a photograph
   # names the image it came from. Change it with each tested build.
-  "sheng-build-tag=mun-fix2",
+  "sheng-build-tag=mun-fix3",
   # qcom-usb-debug=1 starts the CDC-ACM console over the board's DWC3 controller. It tees
   # printf, IOLog, kprintf and the panic drain onto a USB serial port, so the log can be read
   # live on the host instead of photographed off the panel. The firmware already brings the
